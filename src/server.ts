@@ -80,7 +80,7 @@ app.get("/", (req, res) => {
     JOIN institutions i ON i.id = sr.institution_id
     ${where}
     ORDER BY ${orderBy}
-    LIMIT 500
+    LIMIT 1000
   `).all(...params) as any[]
 
   const stats = db.prepare(`

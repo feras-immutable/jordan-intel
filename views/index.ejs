@@ -89,7 +89,7 @@
 <div class="top-bar">
   <div>
     <h1>Jordan Property Intel</h1>
-    <div class="subtitle">Bank-owned properties mapped to exact parcels</div>
+    <div class="subtitle">Bank properties, judicial auctions, and verified opportunities in one place</div>
   </div>
   <div class="stats-bar">
     <div class="stat-item"><div class="stat-num"><%= stats.total %></div><div class="stat-lbl">Properties</div></div>
@@ -110,7 +110,7 @@
     <option value="unit" <%= query.type === 'unit' ? 'selected' : '' %>>Units</option>
   </select>
   <select name="bank">
-    <option value="">All banks</option>
+    <option value="">All sources</option>
     <% for (const b of banks) { %>
     <option value="<%= b.id %>" <%= query.bank === b.id ? 'selected' : '' %>><%= b.name_en %></option>
     <% } %>
@@ -127,7 +127,7 @@
 <div class="main">
   <div id="map"></div>
   <div class="list-panel">
-    <div class="list-header"><%= properties.length %> properties</div>
+    <div class="list-header"><%= properties.length < stats.total ? properties.length + ' of ' + stats.total : properties.length %> properties</div>
     <% if (properties.length === 0) { %>
       <div class="empty">No properties match your filters.</div>
     <% } %>
@@ -147,11 +147,9 @@
           <% } %>
           <div class="prop-status">
             <% if (p.resolution_status === 'resolved') { %>
-              <span class="badge badge-verified">✓ Exact Parcel</span>
-            <% } else if (p.resolution_status === 'unverified') { %>
-              <span class="badge badge-identified">Parcel ID</span>
+              <span class="badge badge-verified">✓ Parcel Verified</span>
             <% } else if (p.canonical_key) { %>
-              <span class="badge badge-partial">Partial</span>
+              <span class="badge badge-identified">Parcel Identified</span>
             <% } %>
           </div>
         </div>
