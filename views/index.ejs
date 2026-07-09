@@ -178,7 +178,7 @@
       <div class="card-bottom">
         <% if (isAuction) { %>
           <div class="card-auction-info">
-            <% const descParts = (p.description || '').split('|').map((s: string) => s.trim()); %>
+            <% const descParts = (p.description || '').split('|').map(s => s.trim()); %>
             <% if (descParts[0]) { %><span class="card-badge badge-stage"><%= descParts[0] %></span><% } %>
             <% const bidsMatch = (p.description || '').match(/Bids:\s*(\d+)/); %>
             <% if (bidsMatch) { %> <span class="card-bids"><%= bidsMatch[1] %> <span class="t" data-ar="مزايدة" data-en="bids">مزايدة</span></span><% } %>
