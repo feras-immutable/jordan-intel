@@ -30,6 +30,12 @@ const PURCHASE_INFO: Record<string, { summary: string; methods: string[]; url_fi
     url_field: "source_url",
     last_verified: "July 2026",
   },
+  moj_auctions: {
+    summary: "This is a judicial auction conducted through the Ministry of Justice. Bidding takes place on the MOJ electronic auction platform. Registration and a deposit are typically required to participate.",
+    methods: ["Auction bid", "Cash"],
+    url_field: "source_url",
+    last_verified: "July 2026",
+  },
 }
 
 // ─── Property List ─────────────────────────────────────────────────────────────

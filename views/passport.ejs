@@ -123,7 +123,7 @@
 
     <div class="actions">
       <% if (prop.source_url) { %>
-        <a class="btn btn-primary" href="<%= prop.source_url %>" target="_blank">View Bank Listing</a>
+        <a class="btn btn-primary" href="<%= prop.source_url %>" target="_blank">View Original Listing</a>
       <% } %>
       <% if (prop.aradi_url && prop.resolution_status === 'resolved') { %>
         <a class="btn btn-blue" href="<%= prop.aradi_url %>" target="_blank">View Exact Parcel</a>
@@ -218,13 +218,13 @@
   <!-- 6. HOW TO BUY -->
   <% if (purchaseInfo) { %>
   <div class="section">
-    <div class="section-label">How to Buy from <%= prop.bank_name %></div>
+    <div class="section-label">How to Purchase</div>
     <p style="font-size:13px;line-height:1.5;margin-bottom:10px"><%= purchaseInfo.summary %></p>
     <div style="font-size:12px;color:var(--dim);margin-bottom:10px">
       Payment methods may include: <%= purchaseInfo.methods.join(' · ') %>
     </div>
     <% if (prop.source_url) { %>
-      <a class="btn btn-primary" href="<%= prop.source_url %>" target="_blank">Apply Through <%= prop.bank_name %></a>
+      <a class="btn btn-primary" href="<%= prop.source_url %>" target="_blank">Visit <%= prop.bank_name %></a>
     <% } %>
     <div style="font-size:10px;color:var(--dim);margin-top:8px">Information last verified: <%= purchaseInfo.last_verified %></div>
   </div>
@@ -285,7 +285,7 @@
 <!-- Mobile sticky action bar -->
 <div class="sticky-bar">
   <% if (prop.source_url) { %>
-    <a class="btn btn-primary" href="<%= prop.source_url %>" target="_blank">Bank Listing</a>
+    <a class="btn btn-primary" href="<%= prop.source_url %>" target="_blank">View Source</a>
   <% } %>
   <% if (prop.aradi_url && prop.resolution_status === 'resolved') { %>
     <a class="btn btn-blue" href="<%= prop.aradi_url %>" target="_blank">Exact Parcel</a>

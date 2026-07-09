@@ -220,7 +220,7 @@ export async function scrapeMojAuctions(): Promise<number> {
           VALUES (?, ?, ?, ?, ?, ?, 1)
           ON CONFLICT(institution_id, source_property_id) DO UPDATE SET
             raw_data = excluded.raw_data, last_seen_at = excluded.last_seen_at, currently_active = 1
-        `).run(INSTITUTION_ID, sourceId, url, JSON.stringify(a), now, now)
+        `).run(INSTITUTION_ID, sourceId, "https://auctions.moj.gov.jo/", JSON.stringify(a), now, now)
 
         const sourceRow = db.prepare(`SELECT id FROM source_records WHERE institution_id = ? AND source_property_id = ?`)
           .get(INSTITUTION_ID, sourceId) as { id: number } | undefined
