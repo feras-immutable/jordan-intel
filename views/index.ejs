@@ -132,7 +132,7 @@
       <div class="empty">No properties match your filters.</div>
     <% } %>
     <% for (const p of properties) { %>
-    <div class="prop-card" data-id="<%= p.source_id %>" data-lat="<%= p.latitude || '' %>" data-lng="<%= p.longitude || '' %>" onclick="window.location='+ base +'/property/<%= p.source_id %>'">
+    <div class="prop-card" data-id="<%= p.source_id %>" data-lat="<%= p.latitude || '' %>" data-lng="<%= p.longitude || '' %>" onclick="window.location='<%= base %>/property/<%= p.source_id %>'">
       <div class="prop-bank"><%= p.bank_name %></div>
       <div class="prop-row">
         <div style="min-width:0;flex:1">
@@ -225,7 +225,7 @@
       <div class="popup-price">${price}</div>
       <div style="font-size:11px;margin-top:2px">${title.substring(0, 50)}</div>
       ${ppm ? '<div style="font-size:10px;color:var(--dim)">' + ppm + '</div>' : ''}
-      <a class="popup-link" href="/property/${id}">View Details →</a>
+      <a class="popup-link" href="<%= base %>/property/${id}">View Details →</a>
     `, { maxWidth: 260 });
 
     card.addEventListener('mouseenter', () => {
