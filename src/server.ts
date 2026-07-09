@@ -173,24 +173,24 @@ app.get("/property/:slug", (req, res, next) => {
   const verified: Array<{ label: string }> = []
   const needsVerification: Array<{ label: string }> = []
 
-  if (p.bank_name) verified.push({ label: "Offered by " + p.bank_name })
-  if (p.price) verified.push({ label: "Asking price: " + fmtJod(p.price) })
-  if (p.asset_level) verified.push({ label: "Property type: " + (assetLevel === "parcel" ? "Land" : assetLevel === "building" ? "Building" : "Unit") })
-  if (p.area_sqm) verified.push({ label: "Area: " + fmt(p.area_sqm) + " m²" })
-  if (p.resolution_status === "resolved") verified.push({ label: "Exact parcel identified and verified" })
-  else if (p.canonical_key) verified.push({ label: "Parcel identifiers available" })
-  if (p.latitude && p.longitude) verified.push({ label: "Location coordinates available" })
-  if (p.zoning) verified.push({ label: "Zoning: " + p.zoning })
-  verified.push({ label: "Source last checked: " + new Date(p.last_seen_at).toLocaleDateString() })
+  if (p.bank_name) verified.push({ label: "مقدم من " + p.bank_name })
+  if (p.price) verified.push({ label: "السعر المطلوب: " + fmtJod(p.price) })
+  if (p.asset_level) verified.push({ label: "نوع العقار: " + (assetLevel === "parcel" ? "أرض" : assetLevel === "building" ? "مبنى" : "شقة") })
+  if (p.area_sqm) verified.push({ label: "المساحة: " + fmt(p.area_sqm) + " م²" })
+  if (p.resolution_status === "resolved") verified.push({ label: "تم تحديد القطعة والتحقق منها" })
+  else if (p.canonical_key) verified.push({ label: "معرّفات القطعة متوفرة" })
+  if (p.latitude && p.longitude) verified.push({ label: "إحداثيات الموقع متوفرة" })
+  if (p.zoning) verified.push({ label: "التنظيم: " + p.zoning })
+  verified.push({ label: "آخر فحص: " + new Date(p.last_seen_at).toLocaleDateString("ar-JO") })
 
-  needsVerification.push({ label: "Current ownership and title status" })
-  needsVerification.push({ label: "Liens, mortgages or other encumbrances" })
-  needsVerification.push({ label: "Physical access and road frontage" })
-  if (!p.zoning) needsVerification.push({ label: "Exact zoning and building rights" })
-  needsVerification.push({ label: "Water, sewer and electricity availability" })
-  needsVerification.push({ label: "Occupancy or tenancy status" })
-  needsVerification.push({ label: "Survey and boundary conditions" })
-  needsVerification.push({ label: "Final bank-approved purchase terms" })
+  needsVerification.push({ label: "حالة الملكية وسند التسجيل" })
+  needsVerification.push({ label: "الرهون والأعباء" })
+  needsVerification.push({ label: "الوصول الفعلي والواجهة على الشارع" })
+  if (!p.zoning) needsVerification.push({ label: "التنظيم وحقوق البناء" })
+  needsVerification.push({ label: "توفر المياه والصرف الصحي والكهرباء" })
+  needsVerification.push({ label: "حالة الإشغال أو الاستئجار" })
+  needsVerification.push({ label: "المسح والحدود" })
+  needsVerification.push({ label: "شروط الشراء النهائية" })
 
   const purchaseInfo = PURCHASE_INFO[p.inst_id] || null
 
