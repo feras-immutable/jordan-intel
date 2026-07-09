@@ -172,14 +172,67 @@ export async function scrapeMojAuctions(): Promise<number> {
       console.log(`[moj] Fetching ${cat.label} (${cat.name})...`)
       const url = `https://auctions.moj.gov.jo/AuctionsList.aspx?token=${cat.token}`
 
-      const resp = await axios.get(url, {
+      // Fetch first page
+      const firstResp = await axios.get(url, {
         httpsAgent: agent,
         headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
         timeout: 20000,
       })
 
-      const auctions = parseAuctions(resp.data, cat.name)
-      console.log(`[moj] Parsed ${auctions.length} auctions from ${cat.name}`)
+      let allAuctions = parseAuctions(firstResp.data, cat.name)
+      console.log(`[moj] Page 1: ${allAuctions.length} auctions`)
+
+      // Find how many pages exist and paginate with ASP.NET postback
+      const $ = cheerio.load(firstResp.data)
+      const pageLinks: string[] = []
+      $("a[href*='rptPaging']").each((_, el) => {
+        const href = $(el).attr("href") || ""
+        const target = href.match(/__doPostBack\('([^']+)'/)?.[1]
+        if (target) pageLinks.push(target)
+      })
+
+      console.log(`[moj] Found ${pageLinks.length} additional pages`)
+
+      // Fetch remaining pages via POST
+      for (let p = 0; p < pageLinks.length; p++) {
+        const viewState = $("input[name='__VIEWSTATE']").val() as string
+        const viewStateGen = $("input[name='__VIEWSTATEGENERATOR']").val() as string || ""
+
+        try {
+          const pageResp = await axios.post(url, new URLSearchParams({
+            "__VIEWSTATE": viewState,
+            "__VIEWSTATEGENERATOR": viewStateGen,
+            "__EVENTTARGET": pageLinks[p],
+            "__EVENTARGUMENT": "",
+          }).toString(), {
+            httpsAgent: agent,
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+              "Content-Type": "application/x-www-form-urlencoded",
+              "Referer": url,
+            },
+            timeout: 20000,
+          })
+
+          const pageAuctions = parseAuctions(pageResp.data, cat.name)
+          // Dedupe by auction ID
+          const existingIds = new Set(allAuctions.map(a => a.auctionId))
+          const newFromPage = pageAuctions.filter(a => !existingIds.has(a.auctionId))
+          allAuctions.push(...newFromPage)
+          console.log(`[moj] Page ${p + 2}: ${pageAuctions.length} parsed, ${newFromPage.length} new (total: ${allAuctions.length})`)
+
+          // Update $ for next page's ViewState
+          const $next = cheerio.load(pageResp.data)
+          $("input[name='__VIEWSTATE']").val($next("input[name='__VIEWSTATE']").val() as string)
+
+          await new Promise(r => setTimeout(r, 800))
+        } catch (err: any) {
+          console.warn(`[moj] Page ${p + 2} failed: ${err.message}`)
+        }
+      }
+
+      const auctions = allAuctions
+      console.log(`[moj] Total ${cat.name}: ${auctions.length} auctions`)
 
       for (const a of auctions) {
         const sourceId = a.auctionId || String(a.auctionNumId)
