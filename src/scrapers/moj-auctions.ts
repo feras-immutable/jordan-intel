@@ -182,52 +182,88 @@ export async function scrapeMojAuctions(): Promise<number> {
       let allAuctions = parseAuctions(firstResp.data, cat.name)
       console.log(`[moj] Page 1: ${allAuctions.length} auctions`)
 
-      // Find how many pages exist and paginate with ASP.NET postback
-      const $ = cheerio.load(firstResp.data)
-      const pageLinks: string[] = []
-      $("a[href*='rptPaging']").each((_, el) => {
-        const href = $(el).attr("href") || ""
-        const target = href.match(/__doPostBack\('([^']+)'/)?.[1]
-        if (target) pageLinks.push(target)
-      })
+      // Paginate using ASP.NET postback — keep fetching until no new auctions
+      let currentHtml = firstResp.data
+      let pageNum = 1
+      const maxPages = 100 // safety limit
+      const seenAuctionIds = new Set(allAuctions.map(a => a.auctionId))
 
-      console.log(`[moj] Found ${pageLinks.length} additional pages`)
+      while (pageNum < maxPages) {
+        const $current = cheerio.load(currentHtml)
 
-      // Fetch remaining pages via POST
-      for (let p = 0; p < pageLinks.length; p++) {
-        const viewState = $("input[name='__VIEWSTATE']").val() as string
-        const viewStateGen = $("input[name='__VIEWSTATEGENERATOR']").val() as string || ""
+        // Find all page number links on current page
+        const pageTargets: Array<{ num: string; target: string }> = []
+        $current("a[href*='rptPaging']").each((_, el) => {
+          const text = $current(el).text().trim()
+          const href = $current(el).attr("href") || ""
+          const target = href.match(/__doPostBack\('([^']+)'/)?.[1]
+          if (target && text) pageTargets.push({ num: text, target })
+        })
+
+        // Find the next unvisited page — look for the page after current
+        // Current page is the one without a link (just text, not <a>)
+        const nextTarget = pageTargets.find(pt => parseInt(pt.num) === pageNum + 1)
+        if (!nextTarget) {
+          // Check for "..." or ">>" which loads the next page set
+          const nextSetTarget = pageTargets.find(pt => pt.num === "..." || pt.num === "»" || pt.num === ">>")
+          if (!nextSetTarget) break // No more pages
+          // Fetch the next page set
+          const viewState = $current("input[name='__VIEWSTATE']").val() as string
+          const viewStateGen = $current("input[name='__VIEWSTATEGENERATOR']").val() as string || ""
+          try {
+            const setResp = await axios.post(url, new URLSearchParams({
+              "__VIEWSTATE": viewState,
+              "__VIEWSTATEGENERATOR": viewStateGen,
+              "__EVENTTARGET": nextSetTarget.target,
+              "__EVENTARGUMENT": "",
+            }).toString(), {
+              httpsAgent: agent,
+              headers: { "User-Agent": "Mozilla/5.0", "Content-Type": "application/x-www-form-urlencoded", "Referer": url },
+              timeout: 20000,
+            })
+            currentHtml = setResp.data
+            // Don't increment pageNum — the new page set might start from a different number
+            const setAuctions = parseAuctions(setResp.data, cat.name)
+            const newFromSet = setAuctions.filter(a => !seenAuctionIds.has(a.auctionId))
+            for (const a of newFromSet) seenAuctionIds.add(a.auctionId)
+            allAuctions.push(...newFromSet)
+            console.log(`[moj] Next page set: ${setAuctions.length} parsed, ${newFromSet.length} new (total: ${allAuctions.length})`)
+            pageNum++
+            await new Promise(r => setTimeout(r, 800))
+            continue
+          } catch { break }
+        }
+
+        // Fetch the next page
+        const viewState = $current("input[name='__VIEWSTATE']").val() as string
+        const viewStateGen = $current("input[name='__VIEWSTATEGENERATOR']").val() as string || ""
 
         try {
           const pageResp = await axios.post(url, new URLSearchParams({
             "__VIEWSTATE": viewState,
             "__VIEWSTATEGENERATOR": viewStateGen,
-            "__EVENTTARGET": pageLinks[p],
+            "__EVENTTARGET": nextTarget.target,
             "__EVENTARGUMENT": "",
           }).toString(), {
             httpsAgent: agent,
-            headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-              "Content-Type": "application/x-www-form-urlencoded",
-              "Referer": url,
-            },
+            headers: { "User-Agent": "Mozilla/5.0", "Content-Type": "application/x-www-form-urlencoded", "Referer": url },
             timeout: 20000,
           })
 
           const pageAuctions = parseAuctions(pageResp.data, cat.name)
-          // Dedupe by auction ID
-          const existingIds = new Set(allAuctions.map(a => a.auctionId))
-          const newFromPage = pageAuctions.filter(a => !existingIds.has(a.auctionId))
+          const newFromPage = pageAuctions.filter(a => !seenAuctionIds.has(a.auctionId))
+          for (const a of newFromPage) seenAuctionIds.add(a.auctionId)
           allAuctions.push(...newFromPage)
-          console.log(`[moj] Page ${p + 2}: ${pageAuctions.length} parsed, ${newFromPage.length} new (total: ${allAuctions.length})`)
+          pageNum++
+          console.log(`[moj] Page ${pageNum}: ${pageAuctions.length} parsed, ${newFromPage.length} new (total: ${allAuctions.length})`)
 
-          // Update $ for next page's ViewState
-          const $next = cheerio.load(pageResp.data)
-          $("input[name='__VIEWSTATE']").val($next("input[name='__VIEWSTATE']").val() as string)
+          if (newFromPage.length === 0) break // No new auctions on this page
 
+          currentHtml = pageResp.data
           await new Promise(r => setTimeout(r, 800))
         } catch (err: any) {
-          console.warn(`[moj] Page ${p + 2} failed: ${err.message}`)
+          console.warn(`[moj] Page ${pageNum + 1} failed: ${err.message}`)
+          break
         }
       }
 
