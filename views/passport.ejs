@@ -4,324 +4,299 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><%= prop.title || prop.source_property_id %> — <%= fmtJod(prop.price) %></title>
-<meta property="og:title" content="<%= fmtJod(prop.price) %> — <%= assetLevel === 'parcel' ? 'أرض للبيع' : assetLevel === 'building' ? 'مبنى للبيع' : 'عقار للبيع' %>">
-<meta property="og:description" content="<%= prop.bank_name %> · <%= prop.area_sqm ? fmt(prop.area_sqm) + ' م²' : '' %><%= prop.resolution_status === 'resolved' ? ' · قطعة موثّقة' : '' %>">
+<meta property="og:title" content="<%= fmtJod(prop.price) %> — <%= assetLevel === 'parcel' ? 'أرض للبيع' : 'عقار للبيع' %>">
+<meta property="og:description" content="<%= prop.bank_name %> · <%= prop.area_sqm ? fmt(prop.area_sqm) + ' م²' : '' %>">
 <meta property="og:type" content="website">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  :root {
-    --bg: #ffffff; --bg2: #f8f9fb; --card: #ffffff; --border: #e5e7eb;
-    --text: #1a1a2e; --dim: #6b7280; --accent: #d97706; --green: #16a34a;
-    --red: #dc2626; --blue: #2563eb; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  :root { --bg:#fff; --bg2:#f8f9fb; --card:#fff; --border:#e5e7eb; --text:#1a1a2e; --dim:#6b7280; --accent:#d97706; --green:#16a34a; --red:#dc2626; --blue:#2563eb; --shadow:0 1px 3px rgba(0,0,0,.08); }
+  [data-theme="dark"] { --bg:#0a0a0f; --bg2:#111118; --card:#16161f; --border:#2a2a3a; --text:#e0e0e8; --dim:#888; --accent:#f59e0b; --green:#22c55e; --red:#ef4444; --blue:#3b82f6; --shadow:0 1px 3px rgba(0,0,0,.3); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg2); color:var(--text); font-family:'Segoe UI',Tahoma,Arial,sans-serif; padding-bottom:70px; }
+  [data-lang="en"] { direction:ltr; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+  a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+
+  .container { max-width:1100px; margin:0 auto; padding:16px; }
+  .top-actions { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .back { font-size:12px; color:var(--dim); text-decoration:none; }
+  .tbtn { background:none; border:1px solid var(--border); color:var(--dim); padding:3px 8px; border-radius:5px; cursor:pointer; font-size:11px; }
+
+  .hero { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:20px 24px; margin-bottom:12px; box-shadow:var(--shadow); }
+  .hero-source { font-size:10px; letter-spacing:.3px; font-weight:700; }
+  .hero-source.bank { color:var(--accent); }
+  .hero-source.auction { color:var(--red); }
+  .hero-type-badge { display:inline-block; font-size:9px; font-weight:700; padding:2px 8px; border-radius:3px; margin-inline-start:8px; }
+  .hero-type-badge.auction { background:#fef2f2; color:#991b1b; }
+  .hero-type-badge.bank { background:#fef3c7; color:#92400e; }
+  [data-theme="dark"] .hero-type-badge.auction { background:rgba(220,38,38,.15); color:#fca5a5; }
+  [data-theme="dark"] .hero-type-badge.bank { background:rgba(217,119,6,.15); color:#fbbf24; }
+  .hero-asset { font-size:13px; color:var(--dim); margin-top:4px; }
+  .hero-price { font-size:28px; font-weight:700; margin-top:8px; }
+  .hero-ppm { font-size:12px; color:var(--dim); margin-top:2px; }
+  .hero-title { font-size:14px; margin-top:8px; line-height:1.4; }
+  .status-banner { padding:10px 14px; border-radius:8px; margin-top:12px; font-size:12px; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .status-verified { background:#dcfce7; color:#166534; }
+  .status-identified { background:#fef3c7; color:#92400e; }
+  .status-partial { background:#f3f4f6; color:#6b7280; }
+  [data-theme="dark"] .status-verified { background:rgba(22,163,74,.15); color:#4ade80; }
+  [data-theme="dark"] .status-identified { background:rgba(217,119,6,.15); color:#fbbf24; }
+  [data-theme="dark"] .status-partial { background:rgba(107,114,128,.15); color:#9ca3af; }
+  .actions { display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
+  .btn { display:inline-flex; align-items:center; gap:4px; padding:8px 14px; border-radius:6px; font-weight:600; font-size:11px; border:1px solid var(--border); background:var(--card); color:var(--text); cursor:pointer; text-decoration:none; }
+  .btn:hover { background:var(--bg2); text-decoration:none; }
+  .btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn-blue { background:var(--blue); color:#fff; border-color:var(--blue); }
+  .btn-red { background:var(--red); color:#fff; border-color:var(--red); }
+
+  /* Two-column layout */
+  .content-grid { display:grid; grid-template-columns:1fr 320px; gap:12px; }
+  .content-main { min-width:0; }
+  .content-side { position:sticky; top:16px; align-self:start; }
+
+  .section { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin-bottom:12px; box-shadow:var(--shadow); }
+  .section-label { font-size:10px; letter-spacing:.4px; color:var(--dim); font-weight:700; margin-bottom:10px; }
+  #propMap { height:220px; border-radius:8px; margin-bottom:10px; }
+  .kv { display:grid; grid-template-columns:110px 1fr; gap:4px 10px; font-size:12px; }
+  .kv-label { color:var(--dim); }
+  .kv-value { font-weight:500; }
+  .checklist { list-style:none; font-size:12px; }
+  .checklist li { padding:4px 0; display:flex; align-items:flex-start; gap:6px; }
+  .check-yes { color:var(--green); font-weight:700; flex-shrink:0; }
+  .check-no { color:var(--dim); flex-shrink:0; }
+  .timeline-item { display:flex; gap:10px; padding:5px 0; border-bottom:1px solid var(--border); font-size:11px; }
+  .timeline-item:last-child { border:none; }
+  .timeline-date { color:var(--dim); min-width:80px; flex-shrink:0; }
+  .same-card { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin-top:6px; font-size:11px; cursor:pointer; transition:border-color .15s; }
+  .same-card:hover { border-color:var(--accent); }
+  .dd-toggle { font-size:11px; color:var(--accent); cursor:pointer; margin-top:6px; }
+  .dd-content { display:none; margin-top:8px; }
+  .dd-content.open { display:block; }
+
+  .sticky-bar { position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--border); padding:8px 16px; display:flex; gap:6px; justify-content:center; box-shadow:0 -2px 8px rgba(0,0,0,.08); z-index:50; }
+  .sticky-bar .btn { flex:1; justify-content:center; max-width:180px; font-size:11px; }
+
+  @media (max-width:768px) {
+    .content-grid { grid-template-columns:1fr; }
+    .content-side { position:static; }
+    .actions { display:none; }
   }
-  [data-theme="dark"] {
-    --bg: #0a0a0f; --bg2: #111118; --card: #16161f; --border: #2a2a3a;
-    --text: #e0e0e8; --dim: #888; --accent: #f59e0b; --green: #22c55e;
-    --red: #ef4444; --blue: #3b82f6; --shadow: 0 1px 3px rgba(0,0,0,0.3);
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg2); color: var(--text); font-family: 'Segoe UI', Tahoma, Arial, sans-serif; padding-bottom: 70px; }
-  [data-lang="en"] { direction: ltr; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .container { max-width: 720px; margin: 0 auto; padding: 16px; }
-  .top-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-  .back { font-size: 12px; color: var(--dim); }
-  .toggle-btn { background: none; border: 1px solid var(--border); color: var(--dim); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; }
-
-  .section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 12px; box-shadow: var(--shadow); }
-  .section-label { font-size: 10px; letter-spacing: 0.4px; color: var(--dim); font-weight: 700; margin-bottom: 12px; }
-
-  .hero { padding: 22px 24px; }
-  .hero-bank { font-size: 11px; letter-spacing: 0.3px; color: var(--accent); font-weight: 700; }
-  .hero-type { font-size: 12px; color: var(--dim); margin-top: 2px; }
-  .hero-price { font-size: 30px; font-weight: 700; margin-top: 8px; }
-  .hero-ppm { font-size: 13px; color: var(--dim); margin-top: 2px; }
-  .hero-title { font-size: 14px; margin-top: 10px; line-height: 1.4; }
-
-  .status-banner { padding: 12px 16px; border-radius: 8px; margin-top: 14px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .status-verified { background: #dcfce7; color: #166534; }
-  .status-identified { background: #fef3c7; color: #92400e; }
-  .status-partial { background: #f3f4f6; color: #6b7280; }
-  [data-theme="dark"] .status-verified { background: rgba(22,163,74,0.15); color: #4ade80; }
-  [data-theme="dark"] .status-identified { background: rgba(217,119,6,0.15); color: #fbbf24; }
-  [data-theme="dark"] .status-partial { background: rgba(107,114,128,0.15); color: #9ca3af; }
-
-  #propMap { height: 220px; border-radius: 8px; margin-bottom: 12px; }
-  .kv { display: grid; grid-template-columns: 130px 1fr; gap: 5px 12px; font-size: 13px; }
-  .kv-label { color: var(--dim); }
-  .kv-value { font-weight: 500; }
-  .checklist { list-style: none; font-size: 13px; }
-  .checklist li { padding: 5px 0; display: flex; align-items: flex-start; gap: 8px; }
-  .check-yes { color: var(--green); font-weight: 700; flex-shrink: 0; }
-  .check-no { color: var(--dim); flex-shrink: 0; }
-  .timeline-item { display: flex; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
-  .timeline-item:last-child { border: none; }
-  .timeline-date { color: var(--dim); min-width: 85px; flex-shrink: 0; }
-  .same-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 8px; font-size: 12px; cursor: pointer; transition: border-color 0.15s; }
-  .same-card:hover { border-color: var(--accent); }
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 7px; font-weight: 600; font-size: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; text-decoration: none; }
-  .btn:hover { background: var(--bg2); text-decoration: none; }
-  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .btn-blue { background: var(--blue); color: #fff; border-color: var(--blue); }
-  .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
-  .sticky-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); padding: 10px 16px; display: flex; gap: 8px; justify-content: center; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); z-index: 50; }
-  .sticky-bar .btn { flex: 1; justify-content: center; max-width: 200px; }
-  @media (max-width: 640px) { .kv { grid-template-columns: 110px 1fr; font-size: 12px; } .hero-price { font-size: 26px; } .actions { display: none; } }
-  @media (min-width: 641px) { .sticky-bar { display: none; } }
+  @media (min-width:769px) { .sticky-bar { display:none; } }
 </style>
 </head>
 <body>
+<% const isAuction = prop.inst_id === 'moj_auctions'; %>
 <div class="container">
   <div class="top-actions">
-    <a class="back" href="<%= base %>/">
-      <span class="t" data-ar="→ جميع العقارات" data-en="← All Properties">→ جميع العقارات</span>
-    </a>
-    <div style="display:flex;gap:6px">
-      <button class="toggle-btn" onclick="toggleLang()">EN/ع</button>
-      <button class="toggle-btn" onclick="toggleTheme()">🌓</button>
+    <a class="back" href="<%= base %>/"><span class="t" data-ar="→ جميع العقارات" data-en="← All Properties">→ جميع العقارات</span></a>
+    <div style="display:flex;gap:4px">
+      <button class="tbtn" onclick="toggleLang()">EN/ع</button>
+      <button class="tbtn" onclick="toggleTheme()">🌓</button>
     </div>
   </div>
 
   <!-- HERO -->
-  <div class="section hero">
-    <div class="hero-bank"><%= prop.bank_name %></div>
-    <div class="hero-type t" data-ar="<%= assetLevel === 'parcel' ? 'أرض للبيع' : assetLevel === 'building' ? 'مبنى للبيع' : 'عقار للبيع' %>" data-en="<%= assetLevel === 'parcel' ? 'Land for Sale' : assetLevel === 'building' ? 'Building for Sale' : 'Property for Sale' %>"><%= assetLevel === 'parcel' ? 'أرض للبيع' : assetLevel === 'building' ? 'مبنى للبيع' : 'عقار للبيع' %></div>
-    <div class="hero-price"><%= fmtJod(prop.price) %></div>
-    <% if (assetLevel === 'parcel' && pricePerLandSqm) { %>
-      <div class="hero-ppm"><%= pricePerLandSqm %> <span class="t" data-ar="دينار/م²" data-en="JOD/m²">دينار/م²</span></div>
-    <% } else if (assetLevel === 'building' && pricePerBuiltSqm) { %>
-      <div class="hero-ppm"><%= pricePerBuiltSqm %> <span class="t" data-ar="دينار/م² مبنى" data-en="JOD/m² built">دينار/م² مبنى</span><% if (pricePerLandSqm) { %> · <%= pricePerLandSqm %> <span class="t" data-ar="دينار/م² أرض" data-en="JOD/m² land">دينار/م² أرض</span><% } %></div>
-    <% } else if (pricePerBuiltSqm) { %>
-      <div class="hero-ppm"><%= pricePerBuiltSqm %> <span class="t" data-ar="دينار/م²" data-en="JOD/m²">دينار/م²</span></div>
+  <div class="hero">
+    <div>
+      <span class="hero-source <%= isAuction ? 'auction' : 'bank' %>"><%= prop.bank_name %></span>
+      <span class="hero-type-badge <%= isAuction ? 'auction' : 'bank' %>"><%= isAuction ? 'مزاد قضائي' : 'عقار بنكي' %></span>
+    </div>
+    <div class="hero-asset"><%= assetLevel === 'parcel' ? 'أرض للبيع' : assetLevel === 'building' ? 'مبنى للبيع' : 'عقار للبيع' %></div>
+    <% if (prop.price) { %>
+      <div class="hero-price"><%= fmtJod(prop.price) %></div>
+      <% if (assetLevel === 'parcel' && pricePerLandSqm) { %>
+        <div class="hero-ppm"><%= pricePerLandSqm %> دينار/م²</div>
+      <% } else if (pricePerBuiltSqm) { %>
+        <div class="hero-ppm"><%= pricePerBuiltSqm %> دينار/م²</div>
+      <% } %>
+    <% } else if (isAuction) { %>
+      <div class="hero-price" style="font-size:16px;color:var(--dim)">بدون سعر محدد</div>
     <% } %>
     <div class="hero-title"><%= prop.title || prop.source_property_id %></div>
 
     <% if (prop.resolution_status === 'resolved') { %>
-      <div class="status-banner status-verified t" data-ar="✓ تم تحديد القطعة والتحقق منها" data-en="✓ Exact parcel identified and verified">✓ تم تحديد القطعة والتحقق منها</div>
-    <% } else if (prop.resolution_status === 'unverified' || prop.canonical_key) { %>
-      <div class="status-banner status-identified t" data-ar="◐ معرّفات القطعة متوفرة — بانتظار التحقق" data-en="◐ Parcel identifiers available — verification pending">◐ معرّفات القطعة متوفرة — بانتظار التحقق</div>
+      <div class="status-banner status-verified">✓ تم تحديد القطعة والتحقق منها</div>
+    <% } else if (prop.canonical_key) { %>
+      <div class="status-banner status-identified">◐ معرّفات القطعة متوفرة</div>
     <% } else { %>
-      <div class="status-banner status-partial t" data-ar="◐ معلومات جزئية — الموقع قيد التحديد" data-en="◐ Partial property identity — location pending">◐ معلومات جزئية — الموقع قيد التحديد</div>
+      <div class="status-banner status-partial">◐ معلومات جزئية</div>
     <% } %>
 
     <div class="actions">
       <% if (prop.source_url) { %>
-        <a class="btn btn-primary" href="<%= prop.source_url %>" target="_blank"><span class="t" data-ar="عرض الإعلان الأصلي" data-en="View Original Listing">عرض الإعلان الأصلي</span></a>
+        <a class="btn <%= isAuction ? 'btn-red' : 'btn-primary' %>" href="<%= prop.source_url %>" target="_blank"><%= isAuction ? 'المزاد الرسمي' : 'الإعلان الأصلي' %></a>
       <% } %>
       <% if (prop.aradi_url && prop.resolution_status === 'resolved') { %>
-        <a class="btn btn-blue" href="<%= prop.aradi_url %>" target="_blank"><span class="t" data-ar="عرض القطعة" data-en="View Exact Parcel">عرض القطعة</span></a>
+        <a class="btn btn-blue" href="<%= prop.aradi_url %>" target="_blank">عرض القطعة</a>
       <% } %>
-      <button class="btn" onclick="copyLink()"><span class="t" data-ar="نسخ الرابط" data-en="Copy Link">نسخ الرابط</span></button>
-      <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent((assetLevel === 'parcel' ? 'أرض للبيع' : 'عقار للبيع') + ' — ' + fmtJod(prop.price) + '\n' + prop.bank_name + (prop.area_sqm ? ' · ' + fmt(prop.area_sqm) + ' م²' : '') + '\n\nhttps://dealerdash.io/intel/property/' + propSlug) %>" target="_blank">واتساب</a>
+      <button class="btn" onclick="copyLink()">نسخ الرابط</button>
+      <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent((assetLevel==='parcel'?'أرض':'عقار')+' — '+fmtJod(prop.price)+'\n'+prop.bank_name+'\nhttps://dealerdash.io/intel/property/'+propSlug) %>" target="_blank">واتساب</a>
     </div>
   </div>
 
-  <!-- LOCATION -->
-  <% if (prop.latitude && prop.longitude) { %>
-  <div class="section">
-    <div class="section-label t" data-ar="الموقع" data-en="Location">الموقع</div>
-    <div id="propMap"></div>
-    <% if (prop.village_name || prop.basin_name) { %>
-    <div class="kv" style="margin-top:8px">
-      <% if (prop.village_name) { %><div class="kv-label t" data-ar="القرية" data-en="Village">القرية</div><div class="kv-value"><%= prop.village_name %></div><% } %>
-      <% if (prop.basin_name) { %><div class="kv-label t" data-ar="الحوض" data-en="Basin">الحوض</div><div class="kv-value"><%= prop.basin_name %></div><% } %>
-      <% if (prop.p_parcel_number) { %><div class="kv-label t" data-ar="رقم القطعة" data-en="Parcel">رقم القطعة</div><div class="kv-value"><%= prop.p_parcel_number %></div><% } %>
-    </div>
-    <% } %>
-    <div style="margin-top:8px">
-      <a class="btn" href="https://www.google.com/maps?q=<%= prop.latitude %>,<%= prop.longitude %>" target="_blank" style="font-size:11px"><span class="t" data-ar="فتح في خرائط جوجل" data-en="Open in Google Maps">فتح في خرائط جوجل</span></a>
-    </div>
-  </div>
-  <% } else if (prop.village_name || prop.basin_name) { %>
-  <div class="section">
-    <div class="section-label t" data-ar="الموقع" data-en="Location">الموقع</div>
-    <div class="kv">
-      <% if (prop.village_name) { %><div class="kv-label t" data-ar="القرية" data-en="Village">القرية</div><div class="kv-value"><%= prop.village_name %></div><% } %>
-      <% if (prop.basin_name) { %><div class="kv-label t" data-ar="الحوض" data-en="Basin">الحوض</div><div class="kv-value"><%= prop.basin_name %></div><% } %>
-      <% if (prop.p_parcel_number) { %><div class="kv-label t" data-ar="رقم القطعة" data-en="Parcel">رقم القطعة</div><div class="kv-value"><%= prop.p_parcel_number %></div><% } %>
-    </div>
-  </div>
-  <% } %>
-
-  <!-- PROPERTY DETAILS -->
-  <div class="section">
-    <div class="section-label t" data-ar="تفاصيل العقار" data-en="Property Details">تفاصيل العقار</div>
-    <div class="kv">
-      <% if (prop.area_sqm) { %><div class="kv-label t" data-ar="المساحة" data-en="Area">المساحة</div><div class="kv-value"><%= fmt(prop.area_sqm) %> م²</div><% } %>
-      <% if (prop.land_area_sqm && prop.land_area_sqm !== prop.area_sqm) { %><div class="kv-label t" data-ar="مساحة الأرض" data-en="Land Area">مساحة الأرض</div><div class="kv-value"><%= fmt(prop.land_area_sqm) %> م²</div><% } %>
-      <% if (prop.zoning) { %><div class="kv-label t" data-ar="التنظيم" data-en="Zoning">التنظيم</div><div class="kv-value"><%= prop.zoning %></div><% } %>
-    </div>
-    <% if (prop.description && prop.description.length > 10) { %>
-      <div style="margin-top:10px;font-size:12px;color:var(--dim);line-height:1.6"><%= prop.description.slice(0, 400) %></div>
-    <% } %>
-  </div>
-
-  <!-- WHAT WE KNOW -->
-  <div class="section">
-    <div class="section-label t" data-ar="ما نعرفه" data-en="What We Know">ما نعرفه</div>
-    <ul class="checklist">
-      <% for (const v of verified) { %>
-        <li><span class="check-yes">✓</span> <%= v.label %></li>
-      <% } %>
-    </ul>
-  </div>
-
-  <!-- VERIFY BEFORE BUYING -->
-  <div class="section">
-    <div class="section-label t" data-ar="تحقق قبل الشراء" data-en="Verify Before Buying">تحقق قبل الشراء</div>
-    <ul class="checklist">
-      <% for (const v of needsVerification) { %>
-        <li><span class="check-no">○</span> <%= v.label %></li>
-      <% } %>
-    </ul>
-  </div>
-
-  <!-- PRICE HISTORY -->
-  <div class="section">
-    <div class="section-label t" data-ar="سجل الأسعار المطلوبة" data-en="Asking Price History">سجل الأسعار المطلوبة</div>
-    <div class="kv">
-      <div class="kv-label t" data-ar="تتبع منذ" data-en="Tracked since">تتبع منذ</div>
-      <div class="kv-value"><%= new Date(prop.first_seen_at).toLocaleDateString('ar-JO') %></div>
-      <div class="kv-label t" data-ar="آخر فحص" data-en="Last checked">آخر فحص</div>
-      <div class="kv-value"><%= new Date(prop.last_seen_at).toLocaleDateString('ar-JO') %></div>
-      <div class="kv-label t" data-ar="تغييرات السعر" data-en="Price changes">تغييرات السعر</div>
-      <div class="kv-value"><%= history.length > 1 ? (history.length - 1) : 'لا يوجد بعد' %></div>
-    </div>
-    <% if (history.length > 1) { %>
-      <div style="margin-top:10px">
-        <% for (const h of history) { %>
-        <div class="timeline-item">
-          <div class="timeline-date"><%= new Date(h.observed_at).toLocaleDateString('ar-JO') %></div>
-          <div><%= fmtJod(h.price) %></div>
+  <!-- TWO COLUMN LAYOUT -->
+  <div class="content-grid">
+    <div class="content-main">
+      <!-- Map -->
+      <% if (prop.latitude && prop.longitude) { %>
+      <div class="section">
+        <div class="section-label">الموقع</div>
+        <div id="propMap"></div>
+        <% if (prop.village_name || prop.basin_name) { %>
+        <div class="kv">
+          <% if (prop.village_name) { %><div class="kv-label">القرية</div><div class="kv-value"><%= prop.village_name %></div><% } %>
+          <% if (prop.basin_name) { %><div class="kv-label">الحوض</div><div class="kv-value"><%= prop.basin_name %></div><% } %>
+          <% if (prop.p_parcel_number) { %><div class="kv-label">رقم القطعة</div><div class="kv-value"><%= prop.p_parcel_number %></div><% } %>
+          <% if (prop.governorate) { %><div class="kv-label">المحافظة</div><div class="kv-value"><%= prop.governorate %></div><% } %>
         </div>
         <% } %>
       </div>
-    <% } %>
-  </div>
-
-  <!-- HOW TO PURCHASE -->
-  <% if (purchaseInfo) { %>
-  <div class="section">
-    <div class="section-label t" data-ar="طريقة الشراء" data-en="How to Purchase">طريقة الشراء</div>
-    <p style="font-size:13px;line-height:1.6;margin-bottom:10px"><%= purchaseInfo.summary %></p>
-    <div style="font-size:12px;color:var(--dim);margin-bottom:10px">
-      <span class="t" data-ar="طرق الدفع المتاحة:" data-en="Payment methods may include:">طرق الدفع المتاحة:</span> <%= purchaseInfo.methods.join(' · ') %>
-    </div>
-    <% if (prop.source_url) { %>
-      <a class="btn btn-primary" href="<%= prop.source_url %>" target="_blank"><span class="t" data-ar="زيارة <%= prop.bank_name %>" data-en="Visit <%= prop.bank_name %>">زيارة <%= prop.bank_name %></span></a>
-    <% } %>
-    <div style="font-size:10px;color:var(--dim);margin-top:8px"><span class="t" data-ar="آخر تحديث:" data-en="Last verified:">آخر تحديث:</span> <%= purchaseInfo.last_verified %></div>
-  </div>
-  <% } %>
-
-  <!-- SAME PARCEL -->
-  <% if (sameParcel.length > 0) { %>
-  <div class="section">
-    <div class="section-label t" data-ar="سجلات أخرى على نفس القطعة (<%= sameParcel.length %>)" data-en="Other Records on Same Parcel (<%= sameParcel.length %>)">سجلات أخرى على نفس القطعة (<%= sameParcel.length %>)</div>
-    <div style="font-size:11px;color:var(--dim);margin-bottom:8px" class="t" data-ar="هذه الإعلانات تشترك في نفس قطعة الأرض لكن قد تمثل وحدات مختلفة" data-en="These listings share the same land parcel but may represent different units or assets">هذه الإعلانات تشترك في نفس قطعة الأرض لكن قد تمثل وحدات مختلفة</div>
-    <% for (const sp of sameParcel) { %>
-    <a href="<%= base %>/property/<%= sp.source_id %>" style="text-decoration:none;color:inherit">
-      <div class="same-card">
-        <strong><%= sp.bank_name %></strong> · <%= sp.asset_level || 'عقار' %> · <strong><%= fmtJod(sp.price) %></strong>
-        <div style="color:var(--dim);margin-top:2px"><%= sp.title %></div>
+      <% } else if (prop.village_name || prop.basin_name) { %>
+      <div class="section">
+        <div class="section-label">الموقع</div>
+        <div class="kv">
+          <% if (prop.village_name) { %><div class="kv-label">القرية</div><div class="kv-value"><%= prop.village_name %></div><% } %>
+          <% if (prop.basin_name) { %><div class="kv-label">الحوض</div><div class="kv-value"><%= prop.basin_name %></div><% } %>
+          <% if (prop.p_parcel_number) { %><div class="kv-label">رقم القطعة</div><div class="kv-value"><%= prop.p_parcel_number %></div><% } %>
+          <% if (prop.governorate) { %><div class="kv-label">المحافظة</div><div class="kv-value"><%= prop.governorate %></div><% } %>
+        </div>
       </div>
-    </a>
-    <% } %>
-  </div>
-  <% } %>
-
-  <% if (events.length > 0) { %>
-  <div class="section">
-    <div class="section-label t" data-ar="الأحداث" data-en="Events">الأحداث</div>
-    <% for (const e of events) { %>
-    <div class="timeline-item">
-      <div class="timeline-date"><%= new Date(e.detected_at).toLocaleDateString('ar-JO') %></div>
-      <div><strong><%= e.event_type.replace(/_/g, ' ') %></strong> <span style="color:var(--dim)"><%= e.detail || '' %></span></div>
-    </div>
-    <% } %>
-  </div>
-  <% } %>
-
-  <!-- SOURCE -->
-  <div class="section">
-    <div class="section-label t" data-ar="مصادر البيانات" data-en="Data Sources">مصادر البيانات</div>
-    <div class="kv">
-      <div class="kv-label t" data-ar="مصدر العقار" data-en="Property data">مصدر العقار</div>
-      <div class="kv-value"><%= prop.bank_name %></div>
-      <div class="kv-label t" data-ar="هوية القطعة" data-en="Parcel identity">هوية القطعة</div>
-      <div class="kv-value"><%= prop.resolution_status === 'resolved' ? 'تم التحقق' : prop.canonical_key ? 'من السجل الرسمي' : 'قيد التحديد' %></div>
-      <% if (prop.aradi_url && prop.resolution_status === 'resolved') { %>
-      <div class="kv-label t" data-ar="عرض القطعة" data-en="Parcel view">عرض القطعة</div>
-      <div class="kv-value"><a href="<%= prop.aradi_url %>" target="_blank">Aradi.io</a></div>
       <% } %>
-      <div class="kv-label t" data-ar="آخر فحص" data-en="Last check">آخر فحص</div>
-      <div class="kv-value"><%= new Date(prop.last_seen_at).toLocaleDateString('ar-JO') %></div>
-      <div class="kv-label t" data-ar="المرجع" data-en="Reference">المرجع</div>
-      <div class="kv-value"><%= prop.source_property_id %></div>
-      <% if (prop.source_url) { %>
-      <div class="kv-label t" data-ar="الإعلان الأصلي" data-en="Original listing">الإعلان الأصلي</div>
-      <div class="kv-value"><a href="<%= prop.source_url %>" target="_blank"><span class="t" data-ar="عرض في الموقع الأصلي ←" data-en="View on source website →">عرض في الموقع الأصلي ←</span></a></div>
+
+      <!-- Property details -->
+      <div class="section">
+        <div class="section-label">تفاصيل العقار</div>
+        <div class="kv">
+          <% if (prop.area_sqm) { %><div class="kv-label">المساحة</div><div class="kv-value"><%= fmt(prop.area_sqm) %> م²</div><% } %>
+          <% if (prop.land_area_sqm && prop.land_area_sqm !== prop.area_sqm) { %><div class="kv-label">مساحة الأرض</div><div class="kv-value"><%= fmt(prop.land_area_sqm) %> م²</div><% } %>
+          <% if (prop.zoning) { %><div class="kv-label">التنظيم</div><div class="kv-value"><%= prop.zoning %></div><% } %>
+        </div>
+        <% if (prop.description && prop.description.length > 10) { %>
+          <div style="margin-top:8px;font-size:12px;color:var(--dim);line-height:1.6"><%= prop.description.slice(0, 400) %></div>
+        <% } %>
+      </div>
+
+      <!-- Due diligence (collapsible) -->
+      <div class="section">
+        <div class="section-label">التحقق والعناية الواجبة</div>
+        <div style="font-size:12px;color:var(--dim)"><%= verified.length %> معلومات مؤكدة · <%= needsVerification.length %> بحاجة للتحقق</div>
+        <div class="dd-toggle" onclick="this.nextElementSibling.classList.toggle('open')">عرض التفاصيل ←</div>
+        <div class="dd-content">
+          <div style="margin-top:8px;font-size:11px;font-weight:600;color:var(--green)">ما نعرفه</div>
+          <ul class="checklist">
+            <% for (const v of verified) { %><li><span class="check-yes">✓</span> <%= v.label %></li><% } %>
+          </ul>
+          <div style="margin-top:10px;font-size:11px;font-weight:600;color:var(--dim)">تحقق قبل الشراء</div>
+          <ul class="checklist">
+            <% for (const v of needsVerification) { %><li><span class="check-no">○</span> <%= v.label %></li><% } %>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Price history -->
+      <div class="section">
+        <div class="section-label">سجل الأسعار</div>
+        <div class="kv">
+          <div class="kv-label">تتبع منذ</div><div class="kv-value"><%= new Date(prop.first_seen_at).toLocaleDateString('ar-JO') %></div>
+          <div class="kv-label">آخر فحص</div><div class="kv-value"><%= new Date(prop.last_seen_at).toLocaleDateString('ar-JO') %></div>
+          <div class="kv-label">تغييرات</div><div class="kv-value"><%= history.length > 1 ? (history.length - 1) : 'لا يوجد بعد' %></div>
+        </div>
+        <% if (history.length > 1) { %>
+          <div style="margin-top:8px">
+            <% for (const h of history) { %>
+            <div class="timeline-item"><div class="timeline-date"><%= new Date(h.observed_at).toLocaleDateString('ar-JO') %></div><div><%= fmtJod(h.price) %></div></div>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- Same parcel -->
+      <% if (sameParcel.length > 0) { %>
+      <div class="section">
+        <div class="section-label">سجلات أخرى على نفس القطعة (<%= sameParcel.length %>)</div>
+        <div style="font-size:10px;color:var(--dim);margin-bottom:6px">قد تمثل وحدات مختلفة على نفس قطعة الأرض</div>
+        <% for (const sp of sameParcel) { %>
+        <a href="<%= base %>/property/<%= sp.source_id %>" style="text-decoration:none;color:inherit">
+          <div class="same-card"><strong><%= sp.bank_name %></strong> · <%= sp.asset_level || 'عقار' %> · <strong><%= fmtJod(sp.price) %></strong><div style="color:var(--dim);margin-top:2px"><%= sp.title %></div></div>
+        </a>
+        <% } %>
+      </div>
+      <% } %>
+
+      <% if (events.length > 0) { %>
+      <div class="section">
+        <div class="section-label">الأحداث</div>
+        <% for (const e of events) { %>
+        <div class="timeline-item"><div class="timeline-date"><%= new Date(e.detected_at).toLocaleDateString('ar-JO') %></div><div><strong><%= e.event_type.replace(/_/g,' ') %></strong> <span style="color:var(--dim)"><%= e.detail||'' %></span></div></div>
+        <% } %>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div class="content-side">
+      <!-- Purchase info -->
+      <% if (purchaseInfo) { %>
+      <div class="section">
+        <div class="section-label"><%= isAuction ? 'المشاركة في المزاد' : 'طريقة الشراء' %></div>
+        <p style="font-size:12px;line-height:1.5;margin-bottom:8px"><%= purchaseInfo.summary %></p>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:8px">طرق الدفع: <%= purchaseInfo.methods.join(' · ') %></div>
+        <% if (prop.source_url) { %>
+          <a class="btn <%= isAuction ? 'btn-red' : 'btn-primary' %>" href="<%= prop.source_url %>" target="_blank" style="width:100%;justify-content:center"><%= isAuction ? 'زيارة المزاد' : 'زيارة ' + prop.bank_name %></a>
+        <% } %>
+        <div style="font-size:9px;color:var(--dim);margin-top:6px">آخر تحديث: <%= purchaseInfo.last_verified %></div>
+      </div>
+      <% } %>
+
+      <!-- Source -->
+      <div class="section">
+        <div class="section-label">مصادر البيانات</div>
+        <div class="kv">
+          <div class="kv-label">المصدر</div><div class="kv-value"><%= prop.bank_name %></div>
+          <div class="kv-label">هوية القطعة</div><div class="kv-value"><%= prop.resolution_status === 'resolved' ? 'تم التحقق' : prop.canonical_key ? 'من السجل' : 'قيد التحديد' %></div>
+          <% if (prop.aradi_url && prop.resolution_status === 'resolved') { %>
+          <div class="kv-label">القطعة</div><div class="kv-value"><a href="<%= prop.aradi_url %>" target="_blank">Aradi.io</a></div>
+          <% } %>
+          <div class="kv-label">آخر فحص</div><div class="kv-value"><%= new Date(prop.last_seen_at).toLocaleDateString('ar-JO') %></div>
+          <div class="kv-label">المرجع</div><div class="kv-value"><%= prop.source_property_id %></div>
+        </div>
+        <% if (prop.source_url) { %>
+          <a href="<%= prop.source_url %>" target="_blank" style="font-size:11px;display:block;margin-top:8px">عرض في الموقع الأصلي ←</a>
+        <% } %>
+      </div>
+
+      <% if (prop.latitude && prop.longitude) { %>
+      <div class="section" style="text-align:center">
+        <a class="btn" href="https://www.google.com/maps?q=<%= prop.latitude %>,<%= prop.longitude %>" target="_blank" style="width:100%;justify-content:center">فتح في خرائط جوجل</a>
+      </div>
       <% } %>
     </div>
   </div>
 </div>
 
-<!-- Mobile sticky bar -->
+<!-- Mobile sticky -->
 <div class="sticky-bar">
   <% if (prop.source_url) { %>
-    <a class="btn btn-primary" href="<%= prop.source_url %>" target="_blank"><span class="t" data-ar="المصدر" data-en="Source">المصدر</span></a>
+    <a class="btn <%= isAuction ? 'btn-red' : 'btn-primary' %>" href="<%= prop.source_url %>" target="_blank"><%= isAuction ? 'المزاد' : 'المصدر' %></a>
   <% } %>
   <% if (prop.aradi_url && prop.resolution_status === 'resolved') { %>
-    <a class="btn btn-blue" href="<%= prop.aradi_url %>" target="_blank"><span class="t" data-ar="القطعة" data-en="Parcel">القطعة</span></a>
+    <a class="btn btn-blue" href="<%= prop.aradi_url %>" target="_blank">القطعة</a>
   <% } %>
-  <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent(fmtJod(prop.price) + ' — ' + prop.bank_name + '\nhttps://dealerdash.io/intel/property/' + propSlug) %>" target="_blank"><span class="t" data-ar="مشاركة" data-en="Share">مشاركة</span></a>
+  <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent(fmtJod(prop.price)+' — '+prop.bank_name+'\nhttps://dealerdash.io/intel/property/'+propSlug) %>" target="_blank">مشاركة</a>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  function toggleLang() {
-    const current = document.documentElement.getAttribute('data-lang') || 'ar';
-    const next = current === 'ar' ? 'en' : 'ar';
-    setLang(next);
-  }
-  function setLang(lang) {
-    document.documentElement.setAttribute('data-lang', lang);
-    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-    document.documentElement.setAttribute('lang', lang);
-    localStorage.setItem('lang', lang);
-    document.querySelectorAll('.t').forEach(el => {
-      const text = el.getAttribute('data-' + lang);
-      if (text) el.textContent = text;
-    });
-  }
-  const savedLang = localStorage.getItem('lang') || 'ar';
-  if (savedLang !== 'ar') setLang(savedLang);
-
-  function toggleTheme() {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
-  }
-  if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-
-  function copyLink() {
-    navigator.clipboard.writeText(window.location.href).then(() => {
-      const btn = event.target;
-      const orig = btn.textContent;
-      btn.textContent = lang === 'en' ? 'Copied!' : 'تم النسخ!';
-      setTimeout(() => btn.textContent = orig, 1500);
-    });
-  }
-
+  function toggleLang(){const c=document.documentElement.getAttribute('data-lang')||'ar';setLang(c==='ar'?'en':'ar');}
+  function setLang(l){document.documentElement.setAttribute('data-lang',l);document.documentElement.setAttribute('dir',l==='ar'?'rtl':'ltr');document.documentElement.setAttribute('lang',l);localStorage.setItem('lang',l);document.querySelectorAll('.t').forEach(el=>{const t=el.getAttribute('data-'+l);if(t)el.textContent=t;});}
+  if((localStorage.getItem('lang')||'ar')!=='ar')setLang(localStorage.getItem('lang'));
+  function toggleTheme(){const d=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',d?'':'dark');localStorage.setItem('theme',d?'light':'dark');}
+  if(localStorage.getItem('theme')==='dark')document.documentElement.setAttribute('data-theme','dark');
+  function copyLink(){navigator.clipboard.writeText(window.location.href).then(()=>{const b=event.target;const o=b.textContent;b.textContent='تم!';setTimeout(()=>b.textContent=o,1500);});}
   <% if (prop.latitude && prop.longitude) { %>
-  const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
-  const map = L.map('propMap', { zoomControl: true, scrollWheelZoom: false }).setView([<%= prop.latitude %>, <%= prop.longitude %>], 15);
-  L.tileLayer(
-    isDark() ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    { attribution: '&copy; OSM &copy; CARTO', maxZoom: 19 }
-  ).addTo(map);
-  L.marker([<%= prop.latitude %>, <%= prop.longitude %>]).addTo(map);
+  const isDark=()=>document.documentElement.getAttribute('data-theme')==='dark';
+  const map=L.map('propMap',{zoomControl:true,scrollWheelZoom:false}).setView([<%= prop.latitude %>,<%= prop.longitude %>],15);
+  L.tileLayer(isDark()?'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png':'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO',maxZoom:19}).addTo(map);
+  L.marker([<%= prop.latitude %>,<%= prop.longitude %>]).addTo(map);
   <% } %>
 </script>
 </body>

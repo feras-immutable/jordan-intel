@@ -3,164 +3,195 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>عقارات الأردن — فرص عقارية</title>
+<title>عقارات الأردن</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  :root {
-    --bg: #ffffff; --bg2: #f8f9fb; --card: #ffffff; --border: #e5e7eb;
-    --text: #1a1a2e; --dim: #6b7280; --accent: #d97706; --green: #16a34a;
-    --red: #dc2626; --blue: #2563eb; --hover: rgba(0,0,0,0.02);
-    --shadow: 0 1px 3px rgba(0,0,0,0.08);
-  }
-  [data-theme="dark"] {
-    --bg: #0a0a0f; --bg2: #111118; --card: #16161f; --border: #2a2a3a;
-    --text: #e0e0e8; --dim: #888; --accent: #f59e0b; --green: #22c55e;
-    --red: #ef4444; --blue: #3b82f6; --hover: rgba(255,255,255,0.03);
-    --shadow: 0 1px 3px rgba(0,0,0,0.3);
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg2); color: var(--text); font-family: 'Segoe UI', Tahoma, Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; }
-  [data-lang="en"] body, [data-lang="en"] { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
+  :root { --bg:#fff; --bg2:#f8f9fb; --card:#fff; --border:#e5e7eb; --text:#1a1a2e; --dim:#6b7280; --accent:#d97706; --green:#16a34a; --red:#dc2626; --blue:#2563eb; --hover:rgba(0,0,0,.02); --shadow:0 1px 3px rgba(0,0,0,.08); }
+  [data-theme="dark"] { --bg:#0a0a0f; --bg2:#111118; --card:#16161f; --border:#2a2a3a; --text:#e0e0e8; --dim:#888; --accent:#f59e0b; --green:#22c55e; --red:#ef4444; --blue:#3b82f6; --hover:rgba(255,255,255,.03); --shadow:0 1px 3px rgba(0,0,0,.3); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg2); color:var(--text); font-family:'Segoe UI',Tahoma,Arial,sans-serif; height:100vh; display:flex; flex-direction:column; }
+  [data-lang="en"] { direction:ltr; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+  a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
 
-  .top-bar { padding: 10px 20px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; flex-shrink: 0; box-shadow: var(--shadow); }
-  .top-bar h1 { font-size: 18px; font-weight: 700; }
-  .top-bar .subtitle { color: var(--dim); font-size: 11px; margin-top: 1px; }
-  .stats-bar { display: flex; gap: 20px; margin-inline-start: auto; font-size: 12px; align-items: center; }
-  .stat-item { text-align: center; }
-  .stat-num { font-weight: 700; font-size: 15px; }
-  .stat-lbl { color: var(--dim); font-size: 9px; letter-spacing: 0.3px; }
-  .toggle-btn { background: none; border: 1px solid var(--border); color: var(--dim); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; line-height: 1; }
+  /* Top bar */
+  .top-bar { padding:8px 20px; background:var(--card); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-shrink:0; box-shadow:var(--shadow); }
+  .brand { font-size:17px; font-weight:700; }
+  .top-nav { display:flex; gap:4px; margin-inline-start:20px; }
+  .top-nav a { padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; color:var(--dim); text-decoration:none; }
+  .top-nav a.active { background:var(--accent); color:#fff; }
+  .top-nav a:hover:not(.active) { background:var(--hover); }
+  .top-right { display:flex; gap:8px; margin-inline-start:auto; align-items:center; }
+  .top-stat { text-align:center; font-size:10px; color:var(--dim); }
+  .top-stat b { display:block; font-size:14px; color:var(--text); }
+  .tbtn { background:none; border:1px solid var(--border); color:var(--dim); padding:3px 8px; border-radius:5px; cursor:pointer; font-size:11px; }
 
-  .filters { padding: 8px 20px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
-  .filters select, .filters input { background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 6px; font-size: 12px; }
-  .filters input { width: 180px; }
-  .filters button[type=submit] { background: var(--accent); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; }
+  /* Category tabs + filters */
+  .toolbar { padding:6px 20px; background:var(--card); border-bottom:1px solid var(--border); display:flex; gap:6px; align-items:center; flex-wrap:wrap; flex-shrink:0; }
+  .cat-tabs { display:flex; gap:2px; }
+  .cat-tab { padding:5px 12px; border-radius:5px; font-size:11px; font-weight:600; color:var(--dim); cursor:pointer; text-decoration:none; border:1px solid transparent; }
+  .cat-tab.active { background:var(--bg2); color:var(--text); border-color:var(--border); }
+  .cat-tab:hover:not(.active) { background:var(--hover); }
+  .sep { width:1px; height:20px; background:var(--border); margin:0 6px; }
+  .toolbar select, .toolbar input { background:var(--bg2); border:1px solid var(--border); color:var(--text); padding:5px 8px; border-radius:5px; font-size:11px; }
+  .toolbar input { width:160px; }
+  .toolbar .search-btn { background:var(--accent); color:#fff; border:none; padding:5px 12px; border-radius:5px; font-weight:600; cursor:pointer; font-size:11px; }
+  .view-toggle { display:flex; gap:2px; margin-inline-start:auto; }
+  .view-btn { padding:4px 10px; border:1px solid var(--border); background:var(--card); color:var(--dim); border-radius:5px; cursor:pointer; font-size:11px; }
+  .view-btn.active { background:var(--bg2); color:var(--text); font-weight:600; }
 
-  .main { flex: 1; display: flex; overflow: hidden; }
-  #map { flex: 1; min-width: 0; }
-  .list-panel { width: 400px; overflow-y: auto; border-inline-start: 1px solid var(--border); flex-shrink: 0; background: var(--bg); }
-  .list-header { padding: 8px 14px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--dim); font-weight: 600; background: var(--bg2); }
+  /* Main area */
+  .main { flex:1; display:flex; overflow:hidden; }
+  .main.list-only { flex-direction:column; }
+  #map { flex:1; min-width:0; }
+  .main.list-only #map { display:none; }
+  .list-panel { overflow-y:auto; background:var(--bg); }
+  .main:not(.list-only) .list-panel { width:420px; border-inline-start:1px solid var(--border); flex-shrink:0; }
+  .main.list-only .list-panel { width:100%; max-width:1100px; margin:0 auto; padding:8px 16px; }
+  .list-header { padding:6px 14px; font-size:10px; color:var(--dim); font-weight:600; background:var(--bg2); border-bottom:1px solid var(--border); }
+  .main.list-only .list-header { border-radius:8px 8px 0 0; margin-top:8px; }
 
-  .prop-card { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
-  .prop-card:hover { background: var(--hover); }
-  .prop-bank { font-size: 9px; letter-spacing: 0.3px; color: var(--accent); font-weight: 700; }
-  .prop-row { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 3px; gap: 8px; }
-  .prop-title { font-size: 12px; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .prop-meta { font-size: 10px; color: var(--dim); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
-  .prop-price { font-size: 15px; font-weight: 700; white-space: nowrap; }
-  .prop-ppm { font-size: 10px; color: var(--dim); }
-  .prop-location { font-size: 10px; color: var(--dim); margin-top: 2px; }
-  .prop-status { margin-top: 3px; }
+  /* Property cards */
+  .prop-card { padding:12px 14px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .15s; }
+  .main.list-only .prop-card { border:1px solid var(--border); border-top:none; background:var(--card); }
+  .main.list-only .prop-card:last-child { border-radius:0 0 8px 8px; }
+  .prop-card:hover { background:var(--hover); }
+  .card-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .card-source { font-size:9px; letter-spacing:.3px; font-weight:700; }
+  .card-source.bank { color:var(--accent); }
+  .card-source.auction { color:var(--red); }
+  .card-badge { font-size:8px; font-weight:700; padding:2px 6px; border-radius:3px; }
+  .badge-auction { background:#fef2f2; color:#991b1b; }
+  .badge-bank { background:#fef3c7; color:#92400e; }
+  .badge-stage { background:#ede9fe; color:#5b21b6; }
+  [data-theme="dark"] .badge-auction { background:rgba(220,38,38,.15); color:#fca5a5; }
+  [data-theme="dark"] .badge-bank { background:rgba(217,119,6,.15); color:#fbbf24; }
+  [data-theme="dark"] .badge-stage { background:rgba(139,92,246,.15); color:#a78bfa; }
+  .card-title { font-size:13px; font-weight:600; line-height:1.4; margin-top:4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .card-meta { font-size:10px; color:var(--dim); margin-top:3px; display:flex; gap:6px; flex-wrap:wrap; }
+  .card-bottom { display:flex; justify-content:space-between; align-items:flex-end; margin-top:6px; }
+  .card-price { font-size:16px; font-weight:700; }
+  .card-ppm { font-size:10px; color:var(--dim); }
+  .card-auction-info { font-size:11px; text-align:left; direction:ltr; }
+  [data-lang="en"] .card-auction-info { text-align:right; }
+  .card-bids { font-weight:700; color:var(--blue); }
+  .card-parcel { font-size:9px; margin-top:3px; }
+  .card-parcel .verified { color:var(--green); font-weight:700; }
+  .card-parcel .identified { color:var(--accent); }
+  .empty { text-align:center; padding:40px; color:var(--dim); font-size:13px; }
 
-  .badge { display: inline-block; font-size: 8px; font-weight: 700; padding: 2px 5px; border-radius: 3px; letter-spacing: 0.2px; vertical-align: middle; }
-  .badge-verified { background: #dcfce7; color: #166534; }
-  .badge-identified { background: #fef3c7; color: #92400e; }
-  .badge-parcel { background: #dbeafe; color: #1e40af; }
-  .badge-unit { background: #ede9fe; color: #5b21b6; }
-  .badge-building { background: #fce7f3; color: #9d174d; }
-  [data-theme="dark"] .badge-verified { background: rgba(22,163,74,0.2); color: #4ade80; }
-  [data-theme="dark"] .badge-identified { background: rgba(217,119,6,0.2); color: #fbbf24; }
-  [data-theme="dark"] .badge-parcel { background: rgba(37,99,235,0.15); color: #60a5fa; }
-  [data-theme="dark"] .badge-unit { background: rgba(139,92,246,0.15); color: #a78bfa; }
-  [data-theme="dark"] .badge-building { background: rgba(236,72,153,0.15); color: #f472b6; }
-  .empty { text-align: center; padding: 40px 16px; color: var(--dim); font-size: 13px; }
+  /* Popups */
+  .leaflet-popup-content-wrapper { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:8px; box-shadow:var(--shadow); }
+  .leaflet-popup-tip { background:var(--card); }
+  .leaflet-popup-content { margin:10px 14px; font-size:12px; line-height:1.4; direction:rtl; }
+  .popup-price { font-size:16px; font-weight:700; margin:4px 0; }
+  .popup-source { font-size:9px; font-weight:700; letter-spacing:.3px; }
+  .popup-link { display:inline-block; margin-top:6px; background:var(--accent); color:#fff; padding:4px 12px; border-radius:4px; font-weight:600; font-size:11px; text-decoration:none; }
 
-  .leaflet-popup-content-wrapper { background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); }
-  .leaflet-popup-tip { background: var(--card); }
-  .leaflet-popup-content { margin: 10px 14px; font-size: 12px; line-height: 1.4; direction: rtl; }
-  .popup-price { font-size: 16px; font-weight: 700; margin: 4px 0; }
-  .popup-bank { font-size: 9px; color: var(--accent); font-weight: 700; letter-spacing: 0.3px; }
-  .popup-link { display: inline-block; margin-top: 6px; background: var(--accent); color: #fff; padding: 4px 12px; border-radius: 4px; font-weight: 600; font-size: 11px; text-decoration: none; }
-
-  /* LTR overrides when English is selected */
-  [data-lang="en"] { direction: ltr; }
-  [data-lang="en"] .list-panel { border-inline-start: none; border-left: 1px solid var(--border); }
-
-  @media (max-width: 768px) {
-    .main { flex-direction: column; }
-    #map { height: 50vh; }
-    .list-panel { width: 100%; border-inline-start: none; border-top: 1px solid var(--border); }
-    .stats-bar .stat-item { display: none; }
-    .stats-bar .stat-item:first-child { display: block; }
+  @media (max-width:768px) {
+    .main:not(.list-only) { flex-direction:column; }
+    .main:not(.list-only) #map { height:45vh; }
+    .main:not(.list-only) .list-panel { width:100%; border-inline-start:none; border-top:1px solid var(--border); }
+    .top-stat { display:none; }
+    .top-nav { margin-inline-start:8px; }
   }
 </style>
 </head>
 <body>
 
 <div class="top-bar">
-  <div>
-    <h1 class="t" data-ar="عقارات الأردن" data-en="Jordan Property Intel">عقارات الأردن</h1>
-    <div class="subtitle t" data-ar="عقارات البنوك، المزادات القضائية، وفرص عقارية مميزة في مكان واحد" data-en="Bank properties, judicial auctions, and verified opportunities in one place">عقارات البنوك، المزادات القضائية، وفرص عقارية مميزة في مكان واحد</div>
-  </div>
-  <div class="stats-bar">
-    <div class="stat-item"><div class="stat-num"><%= stats.total %></div><div class="stat-lbl t" data-ar="عقار" data-en="Properties">عقار</div></div>
-    <div class="stat-item"><div class="stat-num" style="color:var(--green)"><%= stats.resolved %></div><div class="stat-lbl t" data-ar="موثّق" data-en="Verified">موثّق</div></div>
-    <% for (const b of banks) { %>
-    <div class="stat-item"><div class="stat-num"><%= b.count %></div><div class="stat-lbl"><%= b.name_en %></div></div>
-    <% } %>
-    <button class="toggle-btn" onclick="toggleLang()" title="English / العربية">EN/ع</button>
-    <button class="toggle-btn" onclick="toggleTheme()" title="Toggle dark mode">🌓</button>
+  <div class="brand t" data-ar="عقارات الأردن" data-en="Jordan Property Intel">عقارات الأردن</div>
+  <nav class="top-nav">
+    <a href="<%= base %>/" class="active t" data-ar="استكشاف" data-en="Discover">استكشاف</a>
+    <a href="#" class="t" data-ar="النشاط" data-en="Activity" style="opacity:.5">النشاط</a>
+    <a href="#" class="t" data-ar="المحفوظات" data-en="Saved" style="opacity:.5">المحفوظات</a>
+  </nav>
+  <div class="top-right">
+    <div class="top-stat"><b><%= stats.total %></b><span class="t" data-ar="عقار" data-en="total">عقار</span></div>
+    <div class="top-stat"><b style="color:var(--green)"><%= stats.resolved %></b><span class="t" data-ar="موثّق" data-en="verified">موثّق</span></div>
+    <button class="tbtn" onclick="toggleLang()">EN/ع</button>
+    <button class="tbtn" onclick="toggleTheme()">🌓</button>
   </div>
 </div>
 
-<form class="filters" method="GET" action="<%= base %>/">
-  <input name="q" class="t" data-ar-placeholder="ابحث عن قرية، حوض، قطعة..." data-en-placeholder="Search village, basin, parcel..." placeholder="ابحث عن قرية، حوض، قطعة..." value="<%= query.q %>">
+<form class="toolbar" method="GET" action="<%= base %>/">
+  <div class="cat-tabs">
+    <a class="cat-tab <%= !query.bank ? 'active' : '' %>" href="<%= base %>/?q=<%= query.q %>&sort=<%= query.sort %>&type=<%= query.type %>"><span class="t" data-ar="الكل" data-en="All">الكل</span> <small>(<%= stats.total %>)</small></a>
+    <a class="cat-tab <%= query.bank === 'moj_auctions' ? 'active' : '' %>" href="<%= base %>/?bank=moj_auctions&q=<%= query.q %>&sort=<%= query.sort %>&type=<%= query.type %>"><span class="t" data-ar="مزادات قضائية" data-en="Auctions">مزادات قضائية</span></a>
+    <a class="cat-tab <%= query.bank === 'housing_bank' || query.bank === 'bank_al_etihad' ? 'active' : '' %>" href="<%= base %>/?bank=housing_bank&q=<%= query.q %>&sort=<%= query.sort %>&type=<%= query.type %>"><span class="t" data-ar="عقارات البنوك" data-en="Bank-Owned">عقارات البنوك</span></a>
+  </div>
+  <div class="sep"></div>
+  <input name="q" placeholder="ابحث عن قرية، حوض، قطعة..." value="<%= query.q %>" class="t" data-ar-placeholder="ابحث عن قرية، حوض، قطعة..." data-en-placeholder="Search village, basin, parcel...">
   <select name="type">
-    <option value="" class="t" data-ar="جميع الأنواع" data-en="All types">جميع الأنواع</option>
-    <option value="parcel" <%= query.type === 'parcel' ? 'selected' : '' %> class="t" data-ar="أراضي" data-en="Land">أراضي</option>
-    <option value="building" <%= query.type === 'building' ? 'selected' : '' %> class="t" data-ar="مباني" data-en="Buildings">مباني</option>
-    <option value="unit" <%= query.type === 'unit' ? 'selected' : '' %> class="t" data-ar="شقق" data-en="Units">شقق</option>
+    <option value="">الكل</option>
+    <option value="parcel" <%= query.type === 'parcel' ? 'selected' : '' %>>أراضي</option>
+    <option value="building" <%= query.type === 'building' ? 'selected' : '' %>>مباني</option>
+    <option value="unit" <%= query.type === 'unit' ? 'selected' : '' %>>شقق</option>
   </select>
-  <select name="bank">
-    <option value="" class="t" data-ar="جميع المصادر" data-en="All sources">جميع المصادر</option>
-    <% for (const b of banks) { %>
-    <option value="<%= b.id %>" <%= query.bank === b.id ? 'selected' : '' %>><%= b.name_en %></option>
-    <% } %>
-  </select>
+  <input type="hidden" name="bank" value="<%= query.bank %>">
   <select name="sort">
-    <option value="price_asc" <%= query.sort === 'price_asc' ? 'selected' : '' %> class="t" data-ar="السعر ↑" data-en="Price ↑">السعر ↑</option>
-    <option value="price_desc" <%= query.sort === 'price_desc' ? 'selected' : '' %> class="t" data-ar="السعر ↓" data-en="Price ↓">السعر ↓</option>
-    <option value="area_desc" <%= query.sort === 'area_desc' ? 'selected' : '' %> class="t" data-ar="الأكبر مساحة" data-en="Largest">الأكبر مساحة</option>
-    <option value="newest" <%= query.sort === 'newest' ? 'selected' : '' %> class="t" data-ar="الأحدث" data-en="Newest">الأحدث</option>
+    <option value="price_asc" <%= query.sort === 'price_asc' ? 'selected' : '' %>>السعر ↑</option>
+    <option value="price_desc" <%= query.sort === 'price_desc' ? 'selected' : '' %>>السعر ↓</option>
+    <option value="area_desc" <%= query.sort === 'area_desc' ? 'selected' : '' %>>الأكبر</option>
+    <option value="newest" <%= query.sort === 'newest' ? 'selected' : '' %>>الأحدث</option>
   </select>
-  <button type="submit" class="t" data-ar="بحث" data-en="Search">بحث</button>
+  <button type="submit" class="search-btn t" data-ar="بحث" data-en="Search">بحث</button>
+  <div class="view-toggle">
+    <button type="button" class="view-btn" data-view="list" onclick="setView('list')">☰</button>
+    <button type="button" class="view-btn active" data-view="split" onclick="setView('split')">◫</button>
+    <button type="button" class="view-btn" data-view="map" onclick="setView('map')">⌖</button>
+  </div>
 </form>
 
-<div class="main">
+<div class="main" id="mainArea">
   <div id="map"></div>
   <div class="list-panel">
-    <div class="list-header"><%= properties.length < stats.total ? properties.length + ' / ' + stats.total : properties.length %> <span class="t" data-ar="عقار" data-en="properties">عقار</span></div>
+    <div class="list-header"><%= properties.length %> <span class="t" data-ar="عقار" data-en="properties">عقار</span></div>
     <% if (properties.length === 0) { %>
-      <div class="empty t" data-ar="لا توجد نتائج مطابقة" data-en="No properties match your filters.">لا توجد نتائج مطابقة</div>
+      <div class="empty t" data-ar="لا توجد نتائج" data-en="No results">لا توجد نتائج</div>
     <% } %>
     <% for (const p of properties) { %>
+    <% const isAuction = p.institution_id === 'moj_auctions'; %>
     <div class="prop-card" data-id="<%= p.source_id %>" data-lat="<%= p.latitude || '' %>" data-lng="<%= p.longitude || '' %>" onclick="window.location='<%= base %>/property/<%= p.source_id %>'">
-      <div class="prop-bank"><%= p.bank_name %></div>
-      <div class="prop-row">
-        <div style="min-width:0;flex:1">
-          <div class="prop-title"><%= p.title || p.source_property_id %></div>
-          <div class="prop-meta">
-            <span class="badge badge-<%= p.asset_level || 'parcel' %>"><%= p.asset_level === 'parcel' ? 'أرض' : p.asset_level === 'building' ? 'مبنى' : p.asset_level === 'unit' ? 'شقة' : 'أخرى' %></span>
-            <% if (p.area_sqm) { %><span><%= fmt(p.area_sqm) %> م²</span><% } %>
-            <% if (p.zoning) { %><span>· <%= p.zoning %></span><% } %>
-          </div>
-          <% if (p.village_name || p.basin_name) { %>
-            <div class="prop-location"><%= p.village_name || '' %><% if (p.village_name && p.basin_name) { %> · <% } %><%= p.basin_name || '' %></div>
+      <div class="card-top">
+        <div>
+          <span class="card-source <%= isAuction ? 'auction' : 'bank' %>"><%= p.bank_name %></span>
+          <% if (isAuction) { %>
+            <span class="card-badge badge-auction t" data-ar="مزاد قضائي" data-en="Auction">مزاد قضائي</span>
+          <% } else { %>
+            <span class="card-badge badge-bank t" data-ar="عقار بنكي" data-en="Bank-Owned">عقار بنكي</span>
           <% } %>
-          <div class="prop-status">
-            <% if (p.resolution_status === 'resolved') { %>
-              <span class="badge badge-verified t" data-ar="✓ قطعة موثّقة" data-en="✓ Parcel Verified">✓ قطعة موثّقة</span>
-            <% } else if (p.canonical_key) { %>
-              <span class="badge badge-identified t" data-ar="قطعة محددة" data-en="Parcel Identified">قطعة محددة</span>
-            <% } %>
-          </div>
         </div>
-        <div style="flex-shrink:0">
-          <div class="prop-price"><%= fmtJod(p.price) %></div>
-          <% if (p.price && p.area_sqm) { %>
-            <div class="prop-ppm"><%= Math.round(p.price / p.area_sqm) %> /م²</div>
+        <% if (p.resolution_status === 'resolved') { %>
+          <span class="card-parcel verified">✓ <span class="t" data-ar="موثّق" data-en="Verified">موثّق</span></span>
+        <% } else if (p.canonical_key) { %>
+          <span class="card-parcel identified"><span class="t" data-ar="محدد" data-en="Identified">محدد</span></span>
+        <% } %>
+      </div>
+      <div class="card-title"><%= p.title || p.source_property_id %></div>
+      <div class="card-meta">
+        <span><%= p.asset_level === 'parcel' ? 'أرض' : p.asset_level === 'building' ? 'مبنى' : p.asset_level === 'unit' ? 'شقة' : 'أخرى' %></span>
+        <% if (p.area_sqm) { %><span><%= fmt(p.area_sqm) %> م²</span><% } %>
+        <% if (p.village_name) { %><span><%= p.village_name %></span><% } %>
+        <% if (p.basin_name) { %><span><%= p.basin_name %></span><% } %>
+        <% if (p.governorate) { %><span><%= p.governorate %></span><% } %>
+      </div>
+      <div class="card-bottom">
+        <% if (isAuction) { %>
+          <div class="card-auction-info">
+            <% const descParts = (p.description || '').split('|').map((s: string) => s.trim()); %>
+            <% if (descParts[0]) { %><span class="card-badge badge-stage"><%= descParts[0] %></span><% } %>
+            <% const bidsMatch = (p.description || '').match(/Bids:\s*(\d+)/); %>
+            <% if (bidsMatch) { %> <span class="card-bids"><%= bidsMatch[1] %> <span class="t" data-ar="مزايدة" data-en="bids">مزايدة</span></span><% } %>
+          </div>
+        <% } else { %>
+          <div></div>
+        <% } %>
+        <div>
+          <% if (p.price) { %>
+            <div class="card-price"><%= fmtJod(p.price) %></div>
+            <% if (p.area_sqm) { %><div class="card-ppm"><%= Math.round(p.price / p.area_sqm) %> /م²</div><% } %>
+          <% } else if (isAuction) { %>
+            <div class="card-price" style="font-size:12px;color:var(--dim)"><span class="t" data-ar="بدون سعر محدد" data-en="Price not set">بدون سعر محدد</span></div>
           <% } %>
         </div>
       </div>
@@ -171,91 +202,48 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // Language toggle
-  function toggleLang() {
-    const current = document.documentElement.getAttribute('data-lang') || 'ar';
-    const next = current === 'ar' ? 'en' : 'ar';
-    setLang(next);
+  // Language
+  function toggleLang() { const c = document.documentElement.getAttribute('data-lang')||'ar'; setLang(c==='ar'?'en':'ar'); }
+  function setLang(l) {
+    document.documentElement.setAttribute('data-lang',l); document.documentElement.setAttribute('dir',l==='ar'?'rtl':'ltr'); document.documentElement.setAttribute('lang',l); localStorage.setItem('lang',l);
+    document.querySelectorAll('.t').forEach(el => { const t=el.getAttribute('data-'+l); if(t)el.textContent=t; const ph=el.getAttribute('data-'+l+'-placeholder'); if(ph)el.setAttribute('placeholder',ph); });
   }
-  function setLang(lang) {
-    document.documentElement.setAttribute('data-lang', lang);
-    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-    document.documentElement.setAttribute('lang', lang);
-    localStorage.setItem('lang', lang);
-    document.querySelectorAll('.t').forEach(el => {
-      const text = el.getAttribute('data-' + lang);
-      if (text) el.textContent = text;
-      const ph = el.getAttribute('data-' + lang + '-placeholder');
-      if (ph) el.setAttribute('placeholder', ph);
-    });
-  }
-  const savedLang = localStorage.getItem('lang') || 'ar';
-  if (savedLang !== 'ar') setLang(savedLang);
+  if((localStorage.getItem('lang')||'ar')!=='ar') setLang(localStorage.getItem('lang'));
 
   // Theme
-  function toggleTheme() {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
-    updateMapTiles();
+  function toggleTheme() { const d=document.documentElement.getAttribute('data-theme')==='dark'; document.documentElement.setAttribute('data-theme',d?'':'dark'); localStorage.setItem('theme',d?'light':'dark'); updateTiles(); }
+  if(localStorage.getItem('theme')==='dark') document.documentElement.setAttribute('data-theme','dark');
+
+  // View toggle
+  function setView(v) {
+    localStorage.setItem('view',v);
+    const m=document.getElementById('mainArea');
+    m.className='main'+(v==='list'?' list-only':'');
+    document.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+    if(v!=='list'&&window._map) window._map.invalidateSize();
   }
-  if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  const savedView=localStorage.getItem('view')||'split';
+  if(savedView!=='split') setView(savedView);
 
   // Map
-  const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
-  const map = L.map('map', { zoomControl: true }).setView([31.95, 35.93], 8);
+  const isDark=()=>document.documentElement.getAttribute('data-theme')==='dark';
+  const _map=L.map('map',{zoomControl:true}).setView([31.95,35.93],8);
+  window._map=_map;
+  let tl=L.tileLayer(isDark()?'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png':'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO',maxZoom:19}).addTo(_map);
+  function updateTiles(){_map.removeLayer(tl);tl=L.tileLayer(isDark()?'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png':'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO',maxZoom:19}).addTo(_map);}
 
-  let tileLayer = L.tileLayer(
-    isDark()
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    { attribution: '&copy; OSM &copy; CARTO', maxZoom: 19 }
-  ).addTo(map);
-
-  function updateMapTiles() {
-    map.removeLayer(tileLayer);
-    tileLayer = L.tileLayer(
-      isDark()
-        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      { attribution: '&copy; OSM &copy; CARTO', maxZoom: 19 }
-    ).addTo(map);
-  }
-
-  const markers = L.featureGroup();
-  const sourceColors = { housing_bank: '#d97706', bank_al_etihad: '#2563eb', moj_auctions: '#dc2626' };
-
-  document.querySelectorAll('.prop-card[data-lat]').forEach(card => {
-    const lat = parseFloat(card.dataset.lat);
-    const lng = parseFloat(card.dataset.lng);
-    if (!lat || !lng) return;
-
-    const id = card.dataset.id;
-    const bank = card.querySelector('.prop-bank')?.textContent?.trim() || '';
-    const title = card.querySelector('.prop-title')?.textContent?.trim() || '';
-    const price = card.querySelector('.prop-price')?.textContent?.trim() || '';
-
-    const isMoj = bank.includes('MOJ') || bank.includes('Auction');
-    const isEtihad = bank.includes('Etihad');
-    const color = isMoj ? sourceColors.moj_auctions : isEtihad ? sourceColors.bank_al_etihad : sourceColors.housing_bank;
-
-    const marker = L.circleMarker([lat, lng], {
-      radius: 6, fillColor: color, color: '#fff', weight: 1.5, opacity: 1, fillOpacity: 0.9
-    }).addTo(markers);
-
-    marker.bindPopup(`
-      <div class="popup-bank">${bank}</div>
-      <div class="popup-price">${price}</div>
-      <div style="font-size:11px;margin-top:2px">${title.substring(0, 50)}</div>
-      <a class="popup-link" href="<%= base %>/property/${id}">عرض التفاصيل →</a>
-    `, { maxWidth: 260 });
-
-    card.addEventListener('mouseenter', () => { marker.setStyle({ radius: 10, weight: 2.5 }); marker.openPopup(); });
-    card.addEventListener('mouseleave', () => { marker.setStyle({ radius: 6, weight: 1.5 }); marker.closePopup(); });
+  const colors={housing_bank:'#d97706',bank_al_etihad:'#2563eb',moj_auctions:'#dc2626'};
+  const mg=L.featureGroup();
+  document.querySelectorAll('.prop-card[data-lat]').forEach(c=>{
+    const lat=parseFloat(c.dataset.lat),lng=parseFloat(c.dataset.lng); if(!lat||!lng)return;
+    const id=c.dataset.id, src=c.querySelector('.card-source')?.textContent?.trim()||'', price=c.querySelector('.card-price')?.textContent?.trim()||'', title=c.querySelector('.card-title')?.textContent?.trim()||'';
+    const isMoj=src.includes('MOJ')||src.includes('Auction')||src.includes('مزاد'); const isEt=src.includes('Etihad');
+    const col=isMoj?colors.moj_auctions:isEt?colors.bank_al_etihad:colors.housing_bank;
+    const m=L.circleMarker([lat,lng],{radius:6,fillColor:col,color:'#fff',weight:1.5,opacity:1,fillOpacity:.9}).addTo(mg);
+    m.bindPopup('<div class="popup-source" style="color:'+col+'">'+src+'</div><div class="popup-price">'+price+'</div><div style="font-size:11px">'+title.substring(0,50)+'</div><a class="popup-link" href="<%= base %>/property/'+id+'">عرض ←</a>',{maxWidth:260});
+    c.addEventListener('mouseenter',()=>{m.setStyle({radius:10,weight:2.5});m.openPopup();}); c.addEventListener('mouseleave',()=>{m.setStyle({radius:6,weight:1.5});m.closePopup();});
   });
-
-  markers.addTo(map);
-  if (markers.getLayers().length > 0) map.fitBounds(markers.getBounds().pad(0.1));
+  mg.addTo(_map); if(mg.getLayers().length>0) _map.fitBounds(mg.getBounds().pad(.1));
 </script>
 </body>
 </html>
