@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jordan Property Intel</title>
+<title>عقارات الأردن — فرص عقارية</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
   :root {
@@ -19,51 +19,49 @@
     --shadow: 0 1px 3px rgba(0,0,0,0.3);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg2); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+  body { background: var(--bg2); color: var(--text); font-family: 'Segoe UI', Tahoma, Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; }
+  [data-lang="en"] body, [data-lang="en"] { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
 
   .top-bar { padding: 10px 20px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; flex-shrink: 0; box-shadow: var(--shadow); }
-  .top-bar h1 { font-size: 17px; font-weight: 700; }
+  .top-bar h1 { font-size: 18px; font-weight: 700; }
   .top-bar .subtitle { color: var(--dim); font-size: 11px; margin-top: 1px; }
-  .stats-bar { display: flex; gap: 20px; margin-left: auto; font-size: 12px; align-items: center; }
+  .stats-bar { display: flex; gap: 20px; margin-inline-start: auto; font-size: 12px; align-items: center; }
   .stat-item { text-align: center; }
   .stat-num { font-weight: 700; font-size: 15px; }
-  .stat-lbl { color: var(--dim); font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; }
-  .theme-toggle { background: none; border: 1px solid var(--border); color: var(--dim); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; line-height: 1; }
+  .stat-lbl { color: var(--dim); font-size: 9px; letter-spacing: 0.3px; }
+  .toggle-btn { background: none; border: 1px solid var(--border); color: var(--dim); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; line-height: 1; }
 
   .filters { padding: 8px 20px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
   .filters select, .filters input { background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 6px; font-size: 12px; }
   .filters input { width: 180px; }
-  .filters button { background: var(--accent); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; }
+  .filters button[type=submit] { background: var(--accent); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; }
 
   .main { flex: 1; display: flex; overflow: hidden; }
   #map { flex: 1; min-width: 0; }
-  .list-panel { width: 400px; overflow-y: auto; border-left: 1px solid var(--border); flex-shrink: 0; background: var(--bg); }
-  .list-header { padding: 8px 14px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; background: var(--bg2); }
+  .list-panel { width: 400px; overflow-y: auto; border-inline-start: 1px solid var(--border); flex-shrink: 0; background: var(--bg); }
+  .list-header { padding: 8px 14px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--dim); font-weight: 600; background: var(--bg2); }
 
   .prop-card { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
   .prop-card:hover { background: var(--hover); }
-  .prop-card.active { background: rgba(217,119,6,0.06); border-left: 3px solid var(--accent); }
-  .prop-bank { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); font-weight: 700; }
+  .prop-bank { font-size: 9px; letter-spacing: 0.3px; color: var(--accent); font-weight: 700; }
   .prop-row { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 3px; gap: 8px; }
-  .prop-title { font-size: 12px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .prop-title { font-size: 12px; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .prop-meta { font-size: 10px; color: var(--dim); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
-  .prop-price { font-size: 15px; font-weight: 700; text-align: right; white-space: nowrap; }
-  .prop-ppm { font-size: 10px; color: var(--dim); text-align: right; }
+  .prop-price { font-size: 15px; font-weight: 700; white-space: nowrap; }
+  .prop-ppm { font-size: 10px; color: var(--dim); }
   .prop-location { font-size: 10px; color: var(--dim); margin-top: 2px; }
   .prop-status { margin-top: 3px; }
 
-  .badge { display: inline-block; font-size: 8px; font-weight: 700; padding: 2px 5px; border-radius: 3px; letter-spacing: 0.2px; vertical-align: middle; text-transform: uppercase; }
+  .badge { display: inline-block; font-size: 8px; font-weight: 700; padding: 2px 5px; border-radius: 3px; letter-spacing: 0.2px; vertical-align: middle; }
   .badge-verified { background: #dcfce7; color: #166534; }
   .badge-identified { background: #fef3c7; color: #92400e; }
-  .badge-partial { background: #f3f4f6; color: #6b7280; }
   .badge-parcel { background: #dbeafe; color: #1e40af; }
   .badge-unit { background: #ede9fe; color: #5b21b6; }
   .badge-building { background: #fce7f3; color: #9d174d; }
   [data-theme="dark"] .badge-verified { background: rgba(22,163,74,0.2); color: #4ade80; }
   [data-theme="dark"] .badge-identified { background: rgba(217,119,6,0.2); color: #fbbf24; }
-  [data-theme="dark"] .badge-partial { background: rgba(107,114,128,0.2); color: #9ca3af; }
   [data-theme="dark"] .badge-parcel { background: rgba(37,99,235,0.15); color: #60a5fa; }
   [data-theme="dark"] .badge-unit { background: rgba(139,92,246,0.15); color: #a78bfa; }
   [data-theme="dark"] .badge-building { background: rgba(236,72,153,0.15); color: #f472b6; }
@@ -71,16 +69,21 @@
 
   .leaflet-popup-content-wrapper { background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); }
   .leaflet-popup-tip { background: var(--card); }
-  .leaflet-popup-content { margin: 10px 14px; font-size: 12px; line-height: 1.4; }
+  .leaflet-popup-content { margin: 10px 14px; font-size: 12px; line-height: 1.4; direction: rtl; }
   .popup-price { font-size: 16px; font-weight: 700; margin: 4px 0; }
-  .popup-bank { font-size: 9px; text-transform: uppercase; color: var(--accent); font-weight: 700; letter-spacing: 0.4px; }
+  .popup-bank { font-size: 9px; color: var(--accent); font-weight: 700; letter-spacing: 0.3px; }
   .popup-link { display: inline-block; margin-top: 6px; background: var(--accent); color: #fff; padding: 4px 12px; border-radius: 4px; font-weight: 600; font-size: 11px; text-decoration: none; }
+
+  /* LTR overrides when English is selected */
+  [data-lang="en"] { direction: ltr; }
+  [data-lang="en"] .list-panel { border-inline-start: none; border-left: 1px solid var(--border); }
 
   @media (max-width: 768px) {
     .main { flex-direction: column; }
     #map { height: 50vh; }
-    .list-panel { width: 100%; border-left: none; border-top: 1px solid var(--border); }
-    .stats-bar { display: none; }
+    .list-panel { width: 100%; border-inline-start: none; border-top: 1px solid var(--border); }
+    .stats-bar .stat-item { display: none; }
+    .stats-bar .stat-item:first-child { display: block; }
   }
 </style>
 </head>
@@ -88,48 +91,49 @@
 
 <div class="top-bar">
   <div>
-    <h1>Jordan Property Intel</h1>
-    <div class="subtitle">Bank properties, judicial auctions, and verified opportunities in one place</div>
+    <h1 class="t" data-ar="عقارات الأردن" data-en="Jordan Property Intel">عقارات الأردن</h1>
+    <div class="subtitle t" data-ar="عقارات البنوك، المزادات القضائية، وفرص عقارية مميزة في مكان واحد" data-en="Bank properties, judicial auctions, and verified opportunities in one place">عقارات البنوك، المزادات القضائية، وفرص عقارية مميزة في مكان واحد</div>
   </div>
   <div class="stats-bar">
-    <div class="stat-item"><div class="stat-num"><%= stats.total %></div><div class="stat-lbl">Properties</div></div>
-    <div class="stat-item"><div class="stat-num" style="color:var(--green)"><%= stats.resolved %></div><div class="stat-lbl">Verified</div></div>
+    <div class="stat-item"><div class="stat-num"><%= stats.total %></div><div class="stat-lbl t" data-ar="عقار" data-en="Properties">عقار</div></div>
+    <div class="stat-item"><div class="stat-num" style="color:var(--green)"><%= stats.resolved %></div><div class="stat-lbl t" data-ar="موثّق" data-en="Verified">موثّق</div></div>
     <% for (const b of banks) { %>
     <div class="stat-item"><div class="stat-num"><%= b.count %></div><div class="stat-lbl"><%= b.name_en %></div></div>
     <% } %>
-    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌓</button>
+    <button class="toggle-btn" onclick="toggleLang()" title="English / العربية">EN/ع</button>
+    <button class="toggle-btn" onclick="toggleTheme()" title="Toggle dark mode">🌓</button>
   </div>
 </div>
 
 <form class="filters" method="GET" action="<%= base %>/">
-  <input name="q" placeholder="Search village, basin, parcel..." value="<%= query.q %>">
+  <input name="q" class="t" data-ar-placeholder="ابحث عن قرية، حوض، قطعة..." data-en-placeholder="Search village, basin, parcel..." placeholder="ابحث عن قرية، حوض، قطعة..." value="<%= query.q %>">
   <select name="type">
-    <option value="">All types</option>
-    <option value="parcel" <%= query.type === 'parcel' ? 'selected' : '' %>>Land</option>
-    <option value="building" <%= query.type === 'building' ? 'selected' : '' %>>Buildings</option>
-    <option value="unit" <%= query.type === 'unit' ? 'selected' : '' %>>Units</option>
+    <option value="" class="t" data-ar="جميع الأنواع" data-en="All types">جميع الأنواع</option>
+    <option value="parcel" <%= query.type === 'parcel' ? 'selected' : '' %> class="t" data-ar="أراضي" data-en="Land">أراضي</option>
+    <option value="building" <%= query.type === 'building' ? 'selected' : '' %> class="t" data-ar="مباني" data-en="Buildings">مباني</option>
+    <option value="unit" <%= query.type === 'unit' ? 'selected' : '' %> class="t" data-ar="شقق" data-en="Units">شقق</option>
   </select>
   <select name="bank">
-    <option value="">All sources</option>
+    <option value="" class="t" data-ar="جميع المصادر" data-en="All sources">جميع المصادر</option>
     <% for (const b of banks) { %>
     <option value="<%= b.id %>" <%= query.bank === b.id ? 'selected' : '' %>><%= b.name_en %></option>
     <% } %>
   </select>
   <select name="sort">
-    <option value="price_asc" <%= query.sort === 'price_asc' ? 'selected' : '' %>>Price ↑</option>
-    <option value="price_desc" <%= query.sort === 'price_desc' ? 'selected' : '' %>>Price ↓</option>
-    <option value="area_desc" <%= query.sort === 'area_desc' ? 'selected' : '' %>>Largest</option>
-    <option value="newest" <%= query.sort === 'newest' ? 'selected' : '' %>>Newest</option>
+    <option value="price_asc" <%= query.sort === 'price_asc' ? 'selected' : '' %> class="t" data-ar="السعر ↑" data-en="Price ↑">السعر ↑</option>
+    <option value="price_desc" <%= query.sort === 'price_desc' ? 'selected' : '' %> class="t" data-ar="السعر ↓" data-en="Price ↓">السعر ↓</option>
+    <option value="area_desc" <%= query.sort === 'area_desc' ? 'selected' : '' %> class="t" data-ar="الأكبر مساحة" data-en="Largest">الأكبر مساحة</option>
+    <option value="newest" <%= query.sort === 'newest' ? 'selected' : '' %> class="t" data-ar="الأحدث" data-en="Newest">الأحدث</option>
   </select>
-  <button type="submit">Search</button>
+  <button type="submit" class="t" data-ar="بحث" data-en="Search">بحث</button>
 </form>
 
 <div class="main">
   <div id="map"></div>
   <div class="list-panel">
-    <div class="list-header"><%= properties.length < stats.total ? properties.length + ' of ' + stats.total : properties.length %> properties</div>
+    <div class="list-header"><%= properties.length < stats.total ? properties.length + ' / ' + stats.total : properties.length %> <span class="t" data-ar="عقار" data-en="properties">عقار</span></div>
     <% if (properties.length === 0) { %>
-      <div class="empty">No properties match your filters.</div>
+      <div class="empty t" data-ar="لا توجد نتائج مطابقة" data-en="No properties match your filters.">لا توجد نتائج مطابقة</div>
     <% } %>
     <% for (const p of properties) { %>
     <div class="prop-card" data-id="<%= p.source_id %>" data-lat="<%= p.latitude || '' %>" data-lng="<%= p.longitude || '' %>" onclick="window.location='<%= base %>/property/<%= p.source_id %>'">
@@ -138,8 +142,8 @@
         <div style="min-width:0;flex:1">
           <div class="prop-title"><%= p.title || p.source_property_id %></div>
           <div class="prop-meta">
-            <span class="badge badge-<%= p.asset_level || 'parcel' %>"><%= p.asset_level === 'parcel' ? 'land' : (p.asset_level || 'other') %></span>
-            <% if (p.area_sqm) { %><span><%= fmt(p.area_sqm) %> m²</span><% } %>
+            <span class="badge badge-<%= p.asset_level || 'parcel' %>"><%= p.asset_level === 'parcel' ? 'أرض' : p.asset_level === 'building' ? 'مبنى' : p.asset_level === 'unit' ? 'شقة' : 'أخرى' %></span>
+            <% if (p.area_sqm) { %><span><%= fmt(p.area_sqm) %> م²</span><% } %>
             <% if (p.zoning) { %><span>· <%= p.zoning %></span><% } %>
           </div>
           <% if (p.village_name || p.basin_name) { %>
@@ -147,16 +151,16 @@
           <% } %>
           <div class="prop-status">
             <% if (p.resolution_status === 'resolved') { %>
-              <span class="badge badge-verified">✓ Parcel Verified</span>
+              <span class="badge badge-verified t" data-ar="✓ قطعة موثّقة" data-en="✓ Parcel Verified">✓ قطعة موثّقة</span>
             <% } else if (p.canonical_key) { %>
-              <span class="badge badge-identified">Parcel Identified</span>
+              <span class="badge badge-identified t" data-ar="قطعة محددة" data-en="Parcel Identified">قطعة محددة</span>
             <% } %>
           </div>
         </div>
         <div style="flex-shrink:0">
           <div class="prop-price"><%= fmtJod(p.price) %></div>
           <% if (p.price && p.area_sqm) { %>
-            <div class="prop-ppm"><%= Math.round(p.price / p.area_sqm) %> /m²</div>
+            <div class="prop-ppm"><%= Math.round(p.price / p.area_sqm) %> /م²</div>
           <% } %>
         </div>
       </div>
@@ -167,6 +171,27 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+  // Language toggle
+  function toggleLang() {
+    const current = document.documentElement.getAttribute('data-lang') || 'ar';
+    const next = current === 'ar' ? 'en' : 'ar';
+    setLang(next);
+  }
+  function setLang(lang) {
+    document.documentElement.setAttribute('data-lang', lang);
+    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    document.documentElement.setAttribute('lang', lang);
+    localStorage.setItem('lang', lang);
+    document.querySelectorAll('.t').forEach(el => {
+      const text = el.getAttribute('data-' + lang);
+      if (text) el.textContent = text;
+      const ph = el.getAttribute('data-' + lang + '-placeholder');
+      if (ph) el.setAttribute('placeholder', ph);
+    });
+  }
+  const savedLang = localStorage.getItem('lang') || 'ar';
+  if (savedLang !== 'ar') setLang(savedLang);
+
   // Theme
   function toggleTheme() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -174,8 +199,7 @@
     localStorage.setItem('theme', isDark ? 'light' : 'dark');
     updateMapTiles();
   }
-  const saved = localStorage.getItem('theme');
-  if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
 
   // Map
   const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
@@ -199,6 +223,7 @@
   }
 
   const markers = L.featureGroup();
+  const sourceColors = { housing_bank: '#d97706', bank_al_etihad: '#2563eb', moj_auctions: '#dc2626' };
 
   document.querySelectorAll('.prop-card[data-lat]').forEach(card => {
     const lat = parseFloat(card.dataset.lat);
@@ -209,10 +234,10 @@
     const bank = card.querySelector('.prop-bank')?.textContent?.trim() || '';
     const title = card.querySelector('.prop-title')?.textContent?.trim() || '';
     const price = card.querySelector('.prop-price')?.textContent?.trim() || '';
-    const ppm = card.querySelector('.prop-ppm')?.textContent?.trim() || '';
 
+    const isMoj = bank.includes('MOJ') || bank.includes('Auction');
     const isEtihad = bank.includes('Etihad');
-    const color = isEtihad ? '#2563eb' : '#d97706';
+    const color = isMoj ? sourceColors.moj_auctions : isEtihad ? sourceColors.bank_al_etihad : sourceColors.housing_bank;
 
     const marker = L.circleMarker([lat, lng], {
       radius: 6, fillColor: color, color: '#fff', weight: 1.5, opacity: 1, fillOpacity: 0.9
@@ -222,18 +247,11 @@
       <div class="popup-bank">${bank}</div>
       <div class="popup-price">${price}</div>
       <div style="font-size:11px;margin-top:2px">${title.substring(0, 50)}</div>
-      ${ppm ? '<div style="font-size:10px;color:var(--dim)">' + ppm + '</div>' : ''}
-      <a class="popup-link" href="<%= base %>/property/${id}">View Details →</a>
+      <a class="popup-link" href="<%= base %>/property/${id}">عرض التفاصيل →</a>
     `, { maxWidth: 260 });
 
-    card.addEventListener('mouseenter', () => {
-      marker.setStyle({ radius: 10, weight: 2.5 });
-      marker.openPopup();
-    });
-    card.addEventListener('mouseleave', () => {
-      marker.setStyle({ radius: 6, weight: 1.5 });
-      marker.closePopup();
-    });
+    card.addEventListener('mouseenter', () => { marker.setStyle({ radius: 10, weight: 2.5 }); marker.openPopup(); });
+    card.addEventListener('mouseleave', () => { marker.setStyle({ radius: 6, weight: 1.5 }); marker.closePopup(); });
   });
 
   markers.addTo(map);
