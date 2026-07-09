@@ -1,5 +1,6 @@
 import { scrapeEtihad } from "./scrapers/bank-al-etihad.js"
 import { scrapeHousingBank } from "./scrapers/housing-bank.js"
+import { scrapeMojAuctions } from "./scrapers/moj-auctions.js"
 
 async function main() {
   console.log("=== Jordan Intel Ingestion ===")
@@ -23,6 +24,16 @@ async function main() {
     results.housing_bank = { count }
   } catch (err: any) {
     results.housing_bank = { count: 0, error: err.message }
+  }
+
+  console.log("")
+
+  // MOJ Auctions
+  try {
+    const count = await scrapeMojAuctions()
+    results.moj_auctions = { count }
+  } catch (err: any) {
+    results.moj_auctions = { count: 0, error: err.message }
   }
 
   console.log("\n=== Summary ===")
