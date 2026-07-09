@@ -1,0 +1,28 @@
+{
+  "name": "jordan-intel",
+  "version": "1.0.0",
+  "description": "Jordan institutional property memory system",
+  "type": "module",
+  "scripts": {
+    "ingest": "tsx src/ingest.ts",
+    "resolve": "tsx src/resolve-parcels.ts",
+    "coords": "tsx src/extract-coords.ts",
+    "report": "tsx src/report.ts",
+    "dev": "tsx src/server.ts"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "axios": "^1.18.1",
+    "better-sqlite3": "^12.11.1",
+    "cheerio": "^1.2.0",
+    "ejs": "^3.1.10",
+    "express": "^5.2.1",
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.0",
+    "typescript": "^7.0.2"
+  }
+}

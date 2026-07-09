@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jordan Property Intel</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root {
+    --bg: #ffffff; --bg2: #f8f9fb; --card: #ffffff; --border: #e5e7eb;
+    --text: #1a1a2e; --dim: #6b7280; --accent: #d97706; --green: #16a34a;
+    --red: #dc2626; --blue: #2563eb; --hover: rgba(0,0,0,0.02);
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  [data-theme="dark"] {
+    --bg: #0a0a0f; --bg2: #111118; --card: #16161f; --border: #2a2a3a;
+    --text: #e0e0e8; --dim: #888; --accent: #f59e0b; --green: #22c55e;
+    --red: #ef4444; --blue: #3b82f6; --hover: rgba(255,255,255,0.03);
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg2); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .top-bar { padding: 10px 20px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; flex-shrink: 0; box-shadow: var(--shadow); }
+  .top-bar h1 { font-size: 17px; font-weight: 700; }
+  .top-bar .subtitle { color: var(--dim); font-size: 11px; margin-top: 1px; }
+  .stats-bar { display: flex; gap: 20px; margin-left: auto; font-size: 12px; align-items: center; }
+  .stat-item { text-align: center; }
+  .stat-num { font-weight: 700; font-size: 15px; }
+  .stat-lbl { color: var(--dim); font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .theme-toggle { background: none; border: 1px solid var(--border); color: var(--dim); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; line-height: 1; }
+
+  .filters { padding: 8px 20px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+  .filters select, .filters input { background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 6px; font-size: 12px; }
+  .filters input { width: 180px; }
+  .filters button { background: var(--accent); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; }
+
+  .main { flex: 1; display: flex; overflow: hidden; }
+  #map { flex: 1; min-width: 0; }
+  .list-panel { width: 400px; overflow-y: auto; border-left: 1px solid var(--border); flex-shrink: 0; background: var(--bg); }
+  .list-header { padding: 8px 14px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; background: var(--bg2); }
+
+  .prop-card { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+  .prop-card:hover { background: var(--hover); }
+  .prop-card.active { background: rgba(217,119,6,0.06); border-left: 3px solid var(--accent); }
+  .prop-bank { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); font-weight: 700; }
+  .prop-row { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 3px; gap: 8px; }
+  .prop-title { font-size: 12px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .prop-meta { font-size: 10px; color: var(--dim); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+  .prop-price { font-size: 15px; font-weight: 700; text-align: right; white-space: nowrap; }
+  .prop-ppm { font-size: 10px; color: var(--dim); text-align: right; }
+  .prop-location { font-size: 10px; color: var(--dim); margin-top: 2px; }
+  .prop-status { margin-top: 3px; }
+
+  .badge { display: inline-block; font-size: 8px; font-weight: 700; padding: 2px 5px; border-radius: 3px; letter-spacing: 0.2px; vertical-align: middle; text-transform: uppercase; }
+  .badge-verified { background: #dcfce7; color: #166534; }
+  .badge-identified { background: #fef3c7; color: #92400e; }
+  .badge-partial { background: #f3f4f6; color: #6b7280; }
+  .badge-parcel { background: #dbeafe; color: #1e40af; }
+  .badge-unit { background: #ede9fe; color: #5b21b6; }
+  .badge-building { background: #fce7f3; color: #9d174d; }
+  [data-theme="dark"] .badge-verified { background: rgba(22,163,74,0.2); color: #4ade80; }
+  [data-theme="dark"] .badge-identified { background: rgba(217,119,6,0.2); color: #fbbf24; }
+  [data-theme="dark"] .badge-partial { background: rgba(107,114,128,0.2); color: #9ca3af; }
+  [data-theme="dark"] .badge-parcel { background: rgba(37,99,235,0.15); color: #60a5fa; }
+  [data-theme="dark"] .badge-unit { background: rgba(139,92,246,0.15); color: #a78bfa; }
+  [data-theme="dark"] .badge-building { background: rgba(236,72,153,0.15); color: #f472b6; }
+  .empty { text-align: center; padding: 40px 16px; color: var(--dim); font-size: 13px; }
+
+  .leaflet-popup-content-wrapper { background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); }
+  .leaflet-popup-tip { background: var(--card); }
+  .leaflet-popup-content { margin: 10px 14px; font-size: 12px; line-height: 1.4; }
+  .popup-price { font-size: 16px; font-weight: 700; margin: 4px 0; }
+  .popup-bank { font-size: 9px; text-transform: uppercase; color: var(--accent); font-weight: 700; letter-spacing: 0.4px; }
+  .popup-link { display: inline-block; margin-top: 6px; background: var(--accent); color: #fff; padding: 4px 12px; border-radius: 4px; font-weight: 600; font-size: 11px; text-decoration: none; }
+
+  @media (max-width: 768px) {
+    .main { flex-direction: column; }
+    #map { height: 50vh; }
+    .list-panel { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+    .stats-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div>
+    <h1>Jordan Property Intel</h1>
+    <div class="subtitle">Bank-owned properties mapped to exact parcels</div>
+  </div>
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-num"><%= stats.total %></div><div class="stat-lbl">Properties</div></div>
+    <div class="stat-item"><div class="stat-num" style="color:var(--green)"><%= stats.resolved %></div><div class="stat-lbl">Verified</div></div>
+    <% for (const b of banks) { %>
+    <div class="stat-item"><div class="stat-num"><%= b.count %></div><div class="stat-lbl"><%= b.name_en %></div></div>
+    <% } %>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌓</button>
+  </div>
+</div>
+
+<form class="filters" method="GET" action="/">
+  <input name="q" placeholder="Search village, basin, parcel..." value="<%= query.q %>">
+  <select name="type">
+    <option value="">All types</option>
+    <option value="parcel" <%= query.type === 'parcel' ? 'selected' : '' %>>Land</option>
+    <option value="building" <%= query.type === 'building' ? 'selected' : '' %>>Buildings</option>
+    <option value="unit" <%= query.type === 'unit' ? 'selected' : '' %>>Units</option>
+  </select>
+  <select name="bank">
+    <option value="">All banks</option>
+    <% for (const b of banks) { %>
+    <option value="<%= b.id %>" <%= query.bank === b.id ? 'selected' : '' %>><%= b.name_en %></option>
+    <% } %>
+  </select>
+  <select name="sort">
+    <option value="price_asc" <%= query.sort === 'price_asc' ? 'selected' : '' %>>Price ↑</option>
+    <option value="price_desc" <%= query.sort === 'price_desc' ? 'selected' : '' %>>Price ↓</option>
+    <option value="area_desc" <%= query.sort === 'area_desc' ? 'selected' : '' %>>Largest</option>
+    <option value="newest" <%= query.sort === 'newest' ? 'selected' : '' %>>Newest</option>
+  </select>
+  <button type="submit">Search</button>
+</form>
+
+<div class="main">
+  <div id="map"></div>
+  <div class="list-panel">
+    <div class="list-header"><%= properties.length %> properties</div>
+    <% if (properties.length === 0) { %>
+      <div class="empty">No properties match your filters.</div>
+    <% } %>
+    <% for (const p of properties) { %>
+    <div class="prop-card" data-id="<%= p.source_id %>" data-lat="<%= p.latitude || '' %>" data-lng="<%= p.longitude || '' %>" onclick="window.location='/property/<%= p.source_id %>'">
+      <div class="prop-bank"><%= p.bank_name %></div>
+      <div class="prop-row">
+        <div style="min-width:0;flex:1">
+          <div class="prop-title"><%= p.title || p.source_property_id %></div>
+          <div class="prop-meta">
+            <span class="badge badge-<%= p.asset_level || 'parcel' %>"><%= p.asset_level === 'parcel' ? 'land' : (p.asset_level || 'other') %></span>
+            <% if (p.area_sqm) { %><span><%= fmt(p.area_sqm) %> m²</span><% } %>
+            <% if (p.zoning) { %><span>· <%= p.zoning %></span><% } %>
+          </div>
+          <% if (p.village_name || p.basin_name) { %>
+            <div class="prop-location"><%= p.village_name || '' %><% if (p.village_name && p.basin_name) { %> · <% } %><%= p.basin_name || '' %></div>
+          <% } %>
+          <div class="prop-status">
+            <% if (p.resolution_status === 'resolved') { %>
+              <span class="badge badge-verified">✓ Exact Parcel</span>
+            <% } else if (p.resolution_status === 'unverified') { %>
+              <span class="badge badge-identified">Parcel ID</span>
+            <% } else if (p.canonical_key) { %>
+              <span class="badge badge-partial">Partial</span>
+            <% } %>
+          </div>
+        </div>
+        <div style="flex-shrink:0">
+          <div class="prop-price"><%= fmtJod(p.price) %></div>
+          <% if (p.price && p.area_sqm) { %>
+            <div class="prop-ppm"><%= Math.round(p.price / p.area_sqm) %> /m²</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // Theme
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    updateMapTiles();
+  }
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+  // Map
+  const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+  const map = L.map('map', { zoomControl: true }).setView([31.95, 35.93], 8);
+
+  let tileLayer = L.tileLayer(
+    isDark()
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    { attribution: '&copy; OSM &copy; CARTO', maxZoom: 19 }
+  ).addTo(map);
+
+  function updateMapTiles() {
+    map.removeLayer(tileLayer);
+    tileLayer = L.tileLayer(
+      isDark()
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      { attribution: '&copy; OSM &copy; CARTO', maxZoom: 19 }
+    ).addTo(map);
+  }
+
+  const markers = L.featureGroup();
+
+  document.querySelectorAll('.prop-card[data-lat]').forEach(card => {
+    const lat = parseFloat(card.dataset.lat);
+    const lng = parseFloat(card.dataset.lng);
+    if (!lat || !lng) return;
+
+    const id = card.dataset.id;
+    const bank = card.querySelector('.prop-bank')?.textContent?.trim() || '';
+    const title = card.querySelector('.prop-title')?.textContent?.trim() || '';
+    const price = card.querySelector('.prop-price')?.textContent?.trim() || '';
+    const ppm = card.querySelector('.prop-ppm')?.textContent?.trim() || '';
+
+    const isEtihad = bank.includes('Etihad');
+    const color = isEtihad ? '#2563eb' : '#d97706';
+
+    const marker = L.circleMarker([lat, lng], {
+      radius: 6, fillColor: color, color: '#fff', weight: 1.5, opacity: 1, fillOpacity: 0.9
+    }).addTo(markers);
+
+    marker.bindPopup(`
+      <div class="popup-bank">${bank}</div>
+      <div class="popup-price">${price}</div>
+      <div style="font-size:11px;margin-top:2px">${title.substring(0, 50)}</div>
+      ${ppm ? '<div style="font-size:10px;color:var(--dim)">' + ppm + '</div>' : ''}
+      <a class="popup-link" href="/property/${id}">View Details →</a>
+    `, { maxWidth: 260 });
+
+    card.addEventListener('mouseenter', () => {
+      marker.setStyle({ radius: 10, weight: 2.5 });
+      marker.openPopup();
+    });
+    card.addEventListener('mouseleave', () => {
+      marker.setStyle({ radius: 6, weight: 1.5 });
+      marker.closePopup();
+    });
+  });
+
+  markers.addTo(map);
+  if (markers.getLayers().length > 0) map.fitBounds(markers.getBounds().pad(0.1));
+</script>
+</body>
+</html>

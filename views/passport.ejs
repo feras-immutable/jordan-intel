@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= prop.title || prop.source_property_id %> — <%= fmtJod(prop.price) %></title>
+<!-- Open Graph / WhatsApp preview -->
+<meta property="og:title" content="<%= fmtJod(prop.price) %> — <%= assetLevel === 'parcel' ? 'Land' : assetLevel === 'building' ? 'Building' : 'Property' %> for Sale">
+<meta property="og:description" content="<%= prop.bank_name %> · <%= prop.area_sqm ? fmt(prop.area_sqm) + ' m²' : '' %><%= prop.resolution_status === 'resolved' ? ' · Exact Parcel Verified' : '' %>">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root {
+    --bg: #ffffff; --bg2: #f8f9fb; --card: #ffffff; --border: #e5e7eb;
+    --text: #1a1a2e; --dim: #6b7280; --accent: #d97706; --green: #16a34a;
+    --red: #dc2626; --blue: #2563eb; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  [data-theme="dark"] {
+    --bg: #0a0a0f; --bg2: #111118; --card: #16161f; --border: #2a2a3a;
+    --text: #e0e0e8; --dim: #888; --accent: #f59e0b; --green: #22c55e;
+    --red: #ef4444; --blue: #3b82f6; --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg2); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding-bottom: 70px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .container { max-width: 720px; margin: 0 auto; padding: 16px; }
+  .back { font-size: 12px; color: var(--dim); margin-bottom: 14px; display: inline-block; }
+
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--dim); font-weight: 700; margin-bottom: 12px; }
+
+  /* Hero */
+  .hero { padding: 22px 24px; }
+  .hero-bank { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); font-weight: 700; }
+  .hero-type { font-size: 12px; color: var(--dim); margin-top: 2px; text-transform: capitalize; }
+  .hero-price { font-size: 30px; font-weight: 700; margin-top: 8px; }
+  .hero-ppm { font-size: 13px; color: var(--dim); margin-top: 2px; }
+  .hero-title { font-size: 14px; margin-top: 10px; line-height: 1.4; }
+
+  /* Status banner */
+  .status-banner { padding: 12px 16px; border-radius: 8px; margin-top: 14px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .status-verified { background: #dcfce7; color: #166534; }
+  .status-identified { background: #fef3c7; color: #92400e; }
+  .status-partial { background: #f3f4f6; color: #6b7280; }
+  [data-theme="dark"] .status-verified { background: rgba(22,163,74,0.15); color: #4ade80; }
+  [data-theme="dark"] .status-identified { background: rgba(217,119,6,0.15); color: #fbbf24; }
+  [data-theme="dark"] .status-partial { background: rgba(107,114,128,0.15); color: #9ca3af; }
+
+  /* Map */
+  #propMap { height: 220px; border-radius: 8px; margin-bottom: 12px; }
+
+  /* Key-value grid */
+  .kv { display: grid; grid-template-columns: 130px 1fr; gap: 5px 12px; font-size: 13px; }
+  .kv-label { color: var(--dim); }
+  .kv-value { font-weight: 500; }
+
+  /* Checklist */
+  .checklist { list-style: none; font-size: 13px; }
+  .checklist li { padding: 5px 0; display: flex; align-items: flex-start; gap: 8px; }
+  .check-yes { color: var(--green); font-weight: 700; flex-shrink: 0; }
+  .check-no { color: var(--dim); flex-shrink: 0; }
+
+  /* Timeline */
+  .timeline-item { display: flex; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .timeline-item:last-child { border: none; }
+  .timeline-date { color: var(--dim); min-width: 85px; flex-shrink: 0; }
+
+  /* Same parcel cards */
+  .same-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 8px; font-size: 12px; cursor: pointer; transition: border-color 0.15s; }
+  .same-card:hover { border-color: var(--accent); }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 7px; font-weight: 600; font-size: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; text-decoration: none; }
+  .btn:hover { background: var(--bg2); text-decoration: none; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-blue { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+  /* Mobile sticky bar */
+  .sticky-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); padding: 10px 16px; display: flex; gap: 8px; justify-content: center; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); z-index: 50; }
+  .sticky-bar .btn { flex: 1; justify-content: center; max-width: 200px; }
+
+  .theme-toggle { position: fixed; top: 12px; right: 12px; background: var(--card); border: 1px solid var(--border); color: var(--dim); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; box-shadow: var(--shadow); z-index: 100; }
+
+  @media (max-width: 640px) {
+    .kv { grid-template-columns: 110px 1fr; font-size: 12px; }
+    .hero-price { font-size: 26px; }
+    .actions { display: none; } /* Use sticky bar on mobile */
+  }
+  @media (min-width: 641px) {
+    .sticky-bar { display: none; } /* Hide sticky bar on desktop */
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+<div class="container">
+  <a class="back" href="/">← All Properties</a>
+
+  <!-- 1. HERO -->
+  <div class="section hero">
+    <div class="hero-bank"><%= prop.bank_name %></div>
+    <div class="hero-type"><%= assetLevel === 'parcel' ? 'Land for Sale' : assetLevel === 'building' ? 'Building for Sale' : 'Property for Sale' %></div>
+    <div class="hero-price"><%= fmtJod(prop.price) %></div>
+    <% if (assetLevel === 'parcel' && pricePerLandSqm) { %>
+      <div class="hero-ppm"><%= pricePerLandSqm %> JOD per m² of land</div>
+    <% } else if (assetLevel === 'building' && pricePerBuiltSqm) { %>
+      <div class="hero-ppm"><%= pricePerBuiltSqm %> JOD/m² built<% if (pricePerLandSqm) { %> · <%= pricePerLandSqm %> JOD/m² land<% } %></div>
+    <% } else if (pricePerBuiltSqm) { %>
+      <div class="hero-ppm"><%= pricePerBuiltSqm %> JOD per m²</div>
+    <% } %>
+    <div class="hero-title"><%= prop.title || prop.source_property_id %></div>
+
+    <!-- Status banner -->
+    <% if (prop.resolution_status === 'resolved') { %>
+      <div class="status-banner status-verified">✓ Exact parcel identified and verified</div>
+    <% } else if (prop.resolution_status === 'unverified' || prop.canonical_key) { %>
+      <div class="status-banner status-identified">◐ Parcel identifiers available — external verification pending</div>
+    <% } else { %>
+      <div class="status-banner status-partial">◐ Partial property identity — location pending</div>
+    <% } %>
+
+    <div class="actions">
+      <% if (prop.source_url) { %>
+        <a class="btn btn-primary" href="<%= prop.source_url %>" target="_blank">View Bank Listing</a>
+      <% } %>
+      <% if (prop.aradi_url && prop.resolution_status === 'resolved') { %>
+        <a class="btn btn-blue" href="<%= prop.aradi_url %>" target="_blank">View Exact Parcel</a>
+      <% } %>
+      <button class="btn" onclick="copyLink()">Copy Link</button>
+      <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent((assetLevel === 'parcel' ? 'Land' : 'Property') + ' for sale — ' + fmtJod(prop.price) + '\n' + prop.bank_name + (prop.area_sqm ? ' · ' + fmt(prop.area_sqm) + ' m²' : '') + (prop.resolution_status === 'resolved' ? ' · Exact parcel verified' : '') + '\n\n' + 'http://localhost:4000/property/' + propSlug) %>" target="_blank">WhatsApp</a>
+    </div>
+  </div>
+
+  <!-- 2. LOCATION & PARCEL -->
+  <% if (prop.latitude && prop.longitude) { %>
+  <div class="section">
+    <div class="section-label">Location</div>
+    <div id="propMap"></div>
+    <% if (prop.village_name || prop.basin_name) { %>
+    <div class="kv" style="margin-top:8px">
+      <% if (prop.village_name) { %><div class="kv-label">Village</div><div class="kv-value"><%= prop.village_name %></div><% } %>
+      <% if (prop.basin_name) { %><div class="kv-label">Basin</div><div class="kv-value"><%= prop.basin_name %></div><% } %>
+      <% if (prop.p_parcel_number) { %><div class="kv-label">Parcel</div><div class="kv-value"><%= prop.p_parcel_number %></div><% } %>
+    </div>
+    <% } %>
+    <div style="margin-top:8px">
+      <a class="btn" href="https://www.google.com/maps?q=<%= prop.latitude %>,<%= prop.longitude %>" target="_blank" style="font-size:11px">Open in Google Maps</a>
+    </div>
+  </div>
+  <% } else if (prop.village_name || prop.basin_name) { %>
+  <div class="section">
+    <div class="section-label">Location</div>
+    <div class="kv">
+      <% if (prop.village_name) { %><div class="kv-label">Village</div><div class="kv-value"><%= prop.village_name %></div><% } %>
+      <% if (prop.basin_name) { %><div class="kv-label">Basin</div><div class="kv-value"><%= prop.basin_name %></div><% } %>
+      <% if (prop.p_parcel_number) { %><div class="kv-label">Parcel</div><div class="kv-value"><%= prop.p_parcel_number %></div><% } %>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- 3. PROPERTY DETAILS -->
+  <div class="section">
+    <div class="section-label">Property Details</div>
+    <div class="kv">
+      <% if (prop.area_sqm) { %><div class="kv-label">Area</div><div class="kv-value"><%= fmt(prop.area_sqm) %> m²</div><% } %>
+      <% if (prop.land_area_sqm && prop.land_area_sqm !== prop.area_sqm) { %><div class="kv-label">Land Area</div><div class="kv-value"><%= fmt(prop.land_area_sqm) %> m²</div><% } %>
+      <% if (prop.zoning) { %><div class="kv-label">Zoning</div><div class="kv-value"><%= prop.zoning %></div><% } %>
+    </div>
+    <% if (prop.description && prop.description.length > 10) { %>
+      <div style="margin-top:10px;font-size:12px;color:var(--dim);line-height:1.5"><%= prop.description.slice(0, 400) %></div>
+    <% } %>
+  </div>
+
+  <!-- 4. KNOWN VS NEEDS VERIFICATION -->
+  <div class="section">
+    <div class="section-label">What We Know</div>
+    <ul class="checklist">
+      <% for (const v of verified) { %>
+        <li><span class="check-yes">✓</span> <%= v.label %></li>
+      <% } %>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Verify Before Buying</div>
+    <ul class="checklist">
+      <% for (const v of needsVerification) { %>
+        <li><span class="check-no">○</span> <%= v.label %></li>
+      <% } %>
+    </ul>
+  </div>
+
+  <!-- 5. MARKET HISTORY -->
+  <div class="section">
+    <div class="section-label">Asking Price History</div>
+    <div class="kv">
+      <div class="kv-label">Tracked since</div>
+      <div class="kv-value"><%= new Date(prop.first_seen_at).toLocaleDateString() %></div>
+      <div class="kv-label">Last checked</div>
+      <div class="kv-value"><%= new Date(prop.last_seen_at).toLocaleDateString() %></div>
+      <div class="kv-label">Price changes</div>
+      <div class="kv-value"><%= history.length > 1 ? (history.length - 1) : 'None yet' %></div>
+    </div>
+    <% if (history.length > 1) { %>
+      <div style="margin-top:10px">
+        <% for (const h of history) { %>
+        <div class="timeline-item">
+          <div class="timeline-date"><%= new Date(h.observed_at).toLocaleDateString() %></div>
+          <div><%= fmtJod(h.price) %></div>
+        </div>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- 6. HOW TO BUY -->
+  <% if (purchaseInfo) { %>
+  <div class="section">
+    <div class="section-label">How to Buy from <%= prop.bank_name %></div>
+    <p style="font-size:13px;line-height:1.5;margin-bottom:10px"><%= purchaseInfo.summary %></p>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:10px">
+      Payment methods may include: <%= purchaseInfo.methods.join(' · ') %>
+    </div>
+    <% if (prop.source_url) { %>
+      <a class="btn btn-primary" href="<%= prop.source_url %>" target="_blank">Apply Through <%= prop.bank_name %></a>
+    <% } %>
+    <div style="font-size:10px;color:var(--dim);margin-top:8px">Information last verified: <%= purchaseInfo.last_verified %></div>
+  </div>
+  <% } %>
+
+  <!-- 7. OTHER ACTIVITY ON SAME PARCEL -->
+  <% if (sameParcel.length > 0) { %>
+  <div class="section">
+    <div class="section-label">Other Records on Same Parcel (<%= sameParcel.length %>)</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:8px">These listings share the same land parcel but may represent different units or assets within it.</div>
+    <% for (const sp of sameParcel) { %>
+    <a href="/property/<%= sp.source_id %>" style="text-decoration:none;color:inherit">
+      <div class="same-card">
+        <strong><%= sp.bank_name %></strong> · <span style="text-transform:capitalize"><%= sp.asset_level || 'property' %></span> · <strong><%= fmtJod(sp.price) %></strong>
+        <div style="color:var(--dim);margin-top:2px"><%= sp.title %></div>
+      </div>
+    </a>
+    <% } %>
+  </div>
+  <% } %>
+
+  <% if (events.length > 0) { %>
+  <div class="section">
+    <div class="section-label">Events</div>
+    <% for (const e of events) { %>
+    <div class="timeline-item">
+      <div class="timeline-date"><%= new Date(e.detected_at).toLocaleDateString() %></div>
+      <div><strong><%= e.event_type.replace(/_/g, ' ') %></strong> <span style="color:var(--dim)"><%= e.detail || '' %></span></div>
+    </div>
+    <% } %>
+  </div>
+  <% } %>
+
+  <!-- 8. SOURCE & PROVENANCE -->
+  <div class="section">
+    <div class="section-label">Data Sources</div>
+    <div class="kv">
+      <div class="kv-label">Property data</div>
+      <div class="kv-value"><%= prop.bank_name %></div>
+      <div class="kv-label">Parcel identity</div>
+      <div class="kv-value"><%= prop.resolution_status === 'resolved' ? 'Parsed and externally verified' : prop.canonical_key ? 'Parsed from official record' : 'Pending resolution' %></div>
+      <% if (prop.aradi_url && prop.resolution_status === 'resolved') { %>
+      <div class="kv-label">Parcel view</div>
+      <div class="kv-value"><a href="<%= prop.aradi_url %>" target="_blank">Aradi.io — verified</a></div>
+      <% } %>
+      <div class="kv-label">Last source check</div>
+      <div class="kv-value"><%= new Date(prop.last_seen_at).toLocaleDateString() %></div>
+      <div class="kv-label">Reference</div>
+      <div class="kv-value"><%= prop.source_property_id %></div>
+      <% if (prop.source_url) { %>
+      <div class="kv-label">Original listing</div>
+      <div class="kv-value"><a href="<%= prop.source_url %>" target="_blank">View on bank website →</a></div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile sticky action bar -->
+<div class="sticky-bar">
+  <% if (prop.source_url) { %>
+    <a class="btn btn-primary" href="<%= prop.source_url %>" target="_blank">Bank Listing</a>
+  <% } %>
+  <% if (prop.aradi_url && prop.resolution_status === 'resolved') { %>
+    <a class="btn btn-blue" href="<%= prop.aradi_url %>" target="_blank">Exact Parcel</a>
+  <% } %>
+  <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent(fmtJod(prop.price) + ' — ' + prop.bank_name + '\nhttp://localhost:4000/property/' + propSlug) %>" target="_blank">Share</a>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // Theme
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+  }
+  if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+  // Copy link
+  function copyLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      const btn = event.target;
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = orig, 1500);
+    });
+  }
+
+  // Mini map
+  <% if (prop.latitude && prop.longitude) { %>
+  const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+  const map = L.map('propMap', { zoomControl: true, scrollWheelZoom: false }).setView([<%= prop.latitude %>, <%= prop.longitude %>], 15);
+  L.tileLayer(
+    isDark()
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    { attribution: '&copy; OSM &copy; CARTO', maxZoom: 19 }
+  ).addTo(map);
+  L.marker([<%= prop.latitude %>, <%= prop.longitude %>]).addTo(map);
+  <% } %>
+</script>
+</body>
+</html>
