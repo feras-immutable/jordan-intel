@@ -96,7 +96,7 @@
 <body>
 <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
 <div class="container">
-  <a class="back" href="/">← All Properties</a>
+  <a class="back" href="<%= base %>/">← All Properties</a>
 
   <!-- 1. HERO -->
   <div class="section hero">
@@ -129,7 +129,7 @@
         <a class="btn btn-blue" href="<%= prop.aradi_url %>" target="_blank">View Exact Parcel</a>
       <% } %>
       <button class="btn" onclick="copyLink()">Copy Link</button>
-      <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent((assetLevel === 'parcel' ? 'Land' : 'Property') + ' for sale — ' + fmtJod(prop.price) + '\n' + prop.bank_name + (prop.area_sqm ? ' · ' + fmt(prop.area_sqm) + ' m²' : '') + (prop.resolution_status === 'resolved' ? ' · Exact parcel verified' : '') + '\n\n' + 'http://localhost:4000/property/' + propSlug) %>" target="_blank">WhatsApp</a>
+      <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent((assetLevel === 'parcel' ? 'Land' : 'Property') + ' for sale — ' + fmtJod(prop.price) + '\n' + prop.bank_name + (prop.area_sqm ? ' · ' + fmt(prop.area_sqm) + ' m²' : '') + (prop.resolution_status === 'resolved' ? ' · Exact parcel verified' : '') + '\n\n' + 'https://dealerdash.io/intel/property/' + propSlug) %>" target="_blank">WhatsApp</a>
     </div>
   </div>
 
@@ -236,7 +236,7 @@
     <div class="section-label">Other Records on Same Parcel (<%= sameParcel.length %>)</div>
     <div style="font-size:11px;color:var(--dim);margin-bottom:8px">These listings share the same land parcel but may represent different units or assets within it.</div>
     <% for (const sp of sameParcel) { %>
-    <a href="/property/<%= sp.source_id %>" style="text-decoration:none;color:inherit">
+    <a href="<%= base %>/property/<%= sp.source_id %>" style="text-decoration:none;color:inherit">
       <div class="same-card">
         <strong><%= sp.bank_name %></strong> · <span style="text-transform:capitalize"><%= sp.asset_level || 'property' %></span> · <strong><%= fmtJod(sp.price) %></strong>
         <div style="color:var(--dim);margin-top:2px"><%= sp.title %></div>
@@ -290,7 +290,7 @@
   <% if (prop.aradi_url && prop.resolution_status === 'resolved') { %>
     <a class="btn btn-blue" href="<%= prop.aradi_url %>" target="_blank">Exact Parcel</a>
   <% } %>
-  <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent(fmtJod(prop.price) + ' — ' + prop.bank_name + '\nhttp://localhost:4000/property/' + propSlug) %>" target="_blank">Share</a>
+  <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent(fmtJod(prop.price) + ' — ' + prop.bank_name + '\nhttps://dealerdash.io/intel/property/' + propSlug) %>" target="_blank">Share</a>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

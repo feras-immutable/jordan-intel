@@ -8,6 +8,7 @@ const __dirname = dirname(__filename)
 
 const app = express()
 const PORT = 4000
+const BASE = process.env.BASE_PATH || ""  // "/intel" in production, "" locally
 
 app.set("view engine", "ejs")
 app.set("views", join(__dirname, "..", "views"))
@@ -94,7 +95,7 @@ app.get("/", (req, res) => {
     GROUP BY sr.institution_id ORDER BY count DESC
   `).all() as any[]
 
-  res.render("index", { properties, stats, banks, query: { type, bank, q, sort }, fmt, fmtJod })
+  res.render("index", { properties, stats, banks, query: { type, bank, q, sort }, fmt, fmtJod, base: BASE })
 })
 
 // ─── Property Passport ─────────────────────────────────────────────────────────
@@ -221,6 +222,7 @@ app.get("/property/:slug", (req, res, next) => {
     prop: p, history, events, sameParcel, fmt, fmtJod,
     assetLevel, pricePerLandSqm, pricePerBuiltSqm,
     verified, needsVerification, purchaseInfo, propSlug: slug2,
+    base: BASE,
   })
   } catch (err: any) {
     console.error("Property route error:", err.message)

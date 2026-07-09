@@ -101,7 +101,7 @@
   </div>
 </div>
 
-<form class="filters" method="GET" action="/">
+<form class="filters" method="GET" action="<%= base %>/">
   <input name="q" placeholder="Search village, basin, parcel..." value="<%= query.q %>">
   <select name="type">
     <option value="">All types</option>
@@ -132,7 +132,7 @@
       <div class="empty">No properties match your filters.</div>
     <% } %>
     <% for (const p of properties) { %>
-    <div class="prop-card" data-id="<%= p.source_id %>" data-lat="<%= p.latitude || '' %>" data-lng="<%= p.longitude || '' %>" onclick="window.location='/property/<%= p.source_id %>'">
+    <div class="prop-card" data-id="<%= p.source_id %>" data-lat="<%= p.latitude || '' %>" data-lng="<%= p.longitude || '' %>" onclick="window.location='+ base +'/property/<%= p.source_id %>'">
       <div class="prop-bank"><%= p.bank_name %></div>
       <div class="prop-row">
         <div style="min-width:0;flex:1">
