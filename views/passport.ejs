@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><%= prop.title || prop.source_property_id %> — <%= fmtJod(prop.price) %></title>
 <meta property="og:title" content="<%= fmtJod(prop.price) %> — <%= assetLevel === 'parcel' ? 'أرض للبيع' : 'عقار للبيع' %>">
-<meta property="og:description" content="<%= prop.bank_name %> · <%= prop.area_sqm ? fmt(prop.area_sqm) + ' م²' : '' %>">
+<meta property="og:description" content="<%= prop.bank_name_ar || prop.bank_name %> · <%= prop.area_sqm ? fmt(prop.area_sqm) + ' م²' : '' %>">
 <meta property="og:type" content="website">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
@@ -97,7 +97,7 @@
   <!-- HERO -->
   <div class="hero">
     <div>
-      <span class="hero-source <%= isAuction ? 'auction' : 'bank' %>"><%= prop.bank_name %></span>
+      <span class="hero-source <%= isAuction ? 'auction' : 'bank' %> t" data-ar="<%= prop.bank_name_ar || prop.bank_name %>" data-en="<%= prop.bank_name %>"><%= prop.bank_name_ar || prop.bank_name %></span>
       <span class="hero-type-badge <%= isAuction ? 'auction' : 'bank' %>"><%= isAuction ? 'مزاد قضائي' : 'عقار بنكي' %></span>
     </div>
     <div class="hero-asset"><%= assetLevel === 'parcel' ? 'أرض للبيع' : assetLevel === 'building' ? 'مبنى للبيع' : 'عقار للبيع' %></div>
@@ -129,7 +129,7 @@
         <a class="btn btn-blue" href="<%= prop.aradi_url %>" target="_blank">عرض القطعة</a>
       <% } %>
       <button class="btn" onclick="copyLink()">نسخ الرابط</button>
-      <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent((assetLevel==='parcel'?'أرض':'عقار')+' — '+fmtJod(prop.price)+'\n'+prop.bank_name+'\nhttps://dealerdash.io/intel/property/'+propSlug) %>" target="_blank">واتساب</a>
+      <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent((assetLevel==='parcel'?'أرض':'عقار')+' — '+fmtJod(prop.price)+'\n'+(prop.bank_name_ar||prop.bank_name)+'\nhttps://dealerdash.io/intel/property/'+propSlug) %>" target="_blank">واتساب</a>
     </div>
   </div>
 
@@ -216,7 +216,7 @@
         <div style="font-size:10px;color:var(--dim);margin-bottom:6px">قد تمثل وحدات مختلفة على نفس قطعة الأرض</div>
         <% for (const sp of sameParcel) { %>
         <a href="<%= base %>/property/<%= sp.source_id %>" style="text-decoration:none;color:inherit">
-          <div class="same-card"><strong><%= sp.bank_name %></strong> · <%= sp.asset_level || 'عقار' %> · <strong><%= fmtJod(sp.price) %></strong><div style="color:var(--dim);margin-top:2px"><%= sp.title %></div></div>
+          <div class="same-card"><strong><%= sp.bank_name_ar || sp.bank_name %></strong> · <%= sp.asset_level || 'عقار' %> · <strong><%= fmtJod(sp.price) %></strong><div style="color:var(--dim);margin-top:2px"><%= sp.title %></div></div>
         </a>
         <% } %>
       </div>
@@ -241,7 +241,7 @@
         <p style="font-size:12px;line-height:1.5;margin-bottom:8px"><%= purchaseInfo.summary %></p>
         <div style="font-size:11px;color:var(--dim);margin-bottom:8px">طرق الدفع: <%= purchaseInfo.methods.join(' · ') %></div>
         <% if (prop.source_url) { %>
-          <a class="btn <%= isAuction ? 'btn-red' : 'btn-primary' %>" href="<%= prop.source_url %>" target="_blank" style="width:100%;justify-content:center"><%= isAuction ? 'زيارة المزاد' : 'زيارة ' + prop.bank_name %></a>
+          <a class="btn <%= isAuction ? 'btn-red' : 'btn-primary' %>" href="<%= prop.source_url %>" target="_blank" style="width:100%;justify-content:center"><%= isAuction ? 'زيارة المزاد' : 'زيارة ' + (prop.bank_name_ar || prop.bank_name) %></a>
         <% } %>
         <div style="font-size:9px;color:var(--dim);margin-top:6px">آخر تحديث: <%= purchaseInfo.last_verified %></div>
       </div>
@@ -251,7 +251,7 @@
       <div class="section">
         <div class="section-label">مصادر البيانات</div>
         <div class="kv">
-          <div class="kv-label">المصدر</div><div class="kv-value"><%= prop.bank_name %></div>
+          <div class="kv-label">المصدر</div><div class="kv-value"><%= prop.bank_name_ar || prop.bank_name %></div>
           <div class="kv-label">هوية القطعة</div><div class="kv-value"><%= prop.resolution_status === 'resolved' ? 'تم التحقق' : prop.canonical_key ? 'من السجل' : 'قيد التحديد' %></div>
           <% if (prop.aradi_url && prop.resolution_status === 'resolved') { %>
           <div class="kv-label">القطعة</div><div class="kv-value"><a href="<%= prop.aradi_url %>" target="_blank">Aradi.io</a></div>
@@ -281,7 +281,7 @@
   <% if (prop.aradi_url && prop.resolution_status === 'resolved') { %>
     <a class="btn btn-blue" href="<%= prop.aradi_url %>" target="_blank">القطعة</a>
   <% } %>
-  <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent(fmtJod(prop.price)+' — '+prop.bank_name+'\nhttps://dealerdash.io/intel/property/'+propSlug) %>" target="_blank">مشاركة</a>
+  <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent(fmtJod(prop.price)+' — '+(prop.bank_name_ar||prop.bank_name)+'\nhttps://dealerdash.io/intel/property/'+propSlug) %>" target="_blank">مشاركة</a>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

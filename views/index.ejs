@@ -154,7 +154,7 @@
     <div class="prop-card" data-id="<%= p.source_id %>" data-lat="<%= p.latitude || '' %>" data-lng="<%= p.longitude || '' %>" onclick="window.location='<%= base %>/property/<%= p.source_id %>'">
       <div class="card-top">
         <div>
-          <span class="card-source <%= isAuction ? 'auction' : 'bank' %>"><%= p.bank_name %></span>
+          <span class="card-source <%= isAuction ? 'auction' : 'bank' %> t" data-ar="<%= p.bank_name_ar || p.bank_name %>" data-en="<%= p.bank_name %>"><%= p.bank_name_ar || p.bank_name %></span>
           <% if (isAuction) { %>
             <span class="card-badge badge-auction t" data-ar="مزاد قضائي" data-en="Auction">مزاد قضائي</span>
           <% } else { %>

@@ -71,7 +71,7 @@ app.get("/", (req, res) => {
       p.canonical_key, p.aradi_url, p.resolution_status,
       p.village_name, p.basin_name, p.basin_id, p.parcel_number as parcel_num,
       srp.asset_level,
-      i.name_en as bank_name
+      i.name_en as bank_name, i.name_ar as bank_name_ar
     FROM source_records sr
     JOIN observations o ON o.source_record_id = sr.id
       AND o.id = (SELECT MAX(o2.id) FROM observations o2 WHERE o2.source_record_id = sr.id)
@@ -94,7 +94,7 @@ app.get("/", (req, res) => {
   `).get() as any
 
   const banks = db.prepare(`
-    SELECT i.id, i.name_en, COUNT(*) as count
+    SELECT i.id, i.name_en, i.name_ar, COUNT(*) as count
     FROM source_records sr
     JOIN institutions i ON i.id = sr.institution_id
     WHERE sr.currently_active = 1
@@ -210,7 +210,7 @@ app.get("/property/:slug", (req, res, next) => {
   if (property.canonical_key) {
     sameParcel = db.prepare(`
       SELECT sr.id as source_id, sr.source_property_id, sr.institution_id,
-        o.title, o.price, o.property_type, srp.asset_level, i.name_en as bank_name,
+        o.title, o.price, o.property_type, srp.asset_level, i.name_en as bank_name, i.name_ar as bank_name_ar,
         i.id as inst_id
       FROM source_record_parcels srp
       JOIN parcels p ON p.id = srp.parcel_id
